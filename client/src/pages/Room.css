@@ -1,0 +1,37 @@
+/* Custom styles for the scrollable #message-box */
+#message-history {
+    overflow-x: hidden;
+    word-wrap: break-word;
+    scrollbar-width:none; /* For Firefox */
+    scrollbar-color: #4caf50 #ffffff; /* For Firefox */
+  }
+  
+  /* Scrollbar styles for Webkit-based browsers */
+  #message-history::-webkit-scrollbar {
+    width: 8px; /* Scrollbar width */
+  }
+
+  #message-history::-webkit-scrollbar{
+    visibility: hidden;
+  }
+  
+  #message-history::-webkit-scrollbar-track {
+    background: #ffffff; /* Track background */
+  }
+  
+  #message-history::-webkit-scrollbar-thumb {
+    background-color: #4caf50; /* Thumb color */
+    border-radius: 20px; /* Rounded scrollbar thumb */
+    border: 2px solid #ffffff; /* Space around thumb */
+  }
+  
+  #message-history::-webkit-scrollbar-thumb:hover {
+    background-color: #45a049; /* Thumb hover color */
+  }
+  
+  #type-message:focus {
+    outline: none; /* Removes the default focus outline */
+ /* Optional: Add a subtle border if desired */
+    box-shadow: none; /* Removes any shadow effect */
+  }
+  

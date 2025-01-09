@@ -1,0 +1,103 @@
+<div>
+      {remoteSocketId ? (
+        <div>Connected to {remoteSocketId}</div>
+      ) : (
+        <div>Not yet connected</div>
+      )}
+      {remoteSocketId && (
+        <button onClick={callUser} disabled={remoteStream}>
+          Call User
+        </button>
+      )}
+      {incomingCall && (
+        <div>
+          Call from {remoteSocketId}{" "}
+          <button onClick={handleVideoCall}>Accept Call </button>
+        </div>
+      )}
+      {myStream && (
+        <div>
+          <h2>My Stream</h2>
+          <ReactPlayer
+            url={myStream}
+            muted
+            playing
+            height={"200px"}
+          ></ReactPlayer>
+        </div>
+      )}
+      {remoteStream && (
+        <div className="flex-col items-center justify-center">
+          <h2>Remote Stream</h2>
+          {incomingCall ? (
+            <div className="h-[200px] w-[300px] bg-slate-500 text-center flex-row justify-center">
+              Call From User
+            </div>
+          ) : (
+            <ReactPlayer
+              url={remoteStream}
+              muted
+              playing
+              height={"200px"}
+              width={"300px"}
+            ></ReactPlayer>
+          )}
+        </div>
+      )}
+      <div className="flex flex-row w-full items-center justify-center">
+        <div className="flex flex-col justify-between items-center border-[1px] border-black min-w-[400px] md:w-[750px] self-center h-[600px] ">
+          <div
+            id="message-history"
+            className=" flex flex-col w-full overflow-scroll ">
+            {messages.map((message) => {
+              index += 1;
+              return (
+                <Messages
+                  key={index}
+                  message={message}
+                  className="mx-4 my-2 px-4 py-2  w-fit rounded"
+                />
+              );
+            })}
+            <div ref={bottomRef}></div>
+          </div>
+
+          <form
+            id="message-box"
+            className="w-full flex flex-col justify-between px-4 py-2"
+            onSubmit={sendMessage}
+          >
+            {fileName.length > 0 && <span className="px-2 mx-2 border-[1px] border-gray-400 border-b-0 rounded">{fileName}</span>}
+              <textarea
+                id="type-message"
+                placeholder="Message"
+                autoComplete="off"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="w-full px-2 h-[100px] text-start overflow-y-auto  border-gray-400 border-[1px] rounded mx-2 resize-none"
+              ></textarea>
+
+              <div className="flex flex-row justify-between ">
+              <div className="w-[100px] text-center items-center flex flex-col justify-center bg-blue-500">
+              <input
+                className="hidden"
+                id="file"
+                type="file"
+                onChange={handleFileChange}
+              />
+              <label htmlFor="file">Select file</label>
+            </div>
+
+              <button
+              id="send-message"
+              onClick={sendMessage}
+              className="mx-2 bg-green-600 hover:bg-green-700 text-gray-100 border-[1px] border-gray-400 font-semibold h-fit  self-center py-3 px-4 rounded-lg"
+            >
+              Send
+            </button>
+              </div>
+            
+          </form>
+        </div>
+      </div>
+    </div>
