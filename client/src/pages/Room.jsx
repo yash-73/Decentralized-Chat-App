@@ -10,6 +10,9 @@ import VideoCallButtons from "../components/VideoCallButtons";
 import ChatBox from "../components/ChatBox";
 
 function Room() {
+
+  const CHUNK_SIZE = 16 * 1024;
+
   const socket = useContext(SocketContext);
 
   const [remoteSocketId, setRemoteSocketId] = useState(null);
@@ -23,6 +26,9 @@ function Room() {
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState("");
   const [files, setFiles] = useState();
+  const [fileProgress, setFileProgress] = useState(0);
+  const [receivingFile, setReceivingFile] = useState({});
+  
 
   const dataChannel = useRef();
   const fileChannel = useRef();
@@ -30,6 +36,44 @@ function Room() {
   const handleIncomingMessage = useCallback((e) => {
     setMessages((messages) => [...messages, { yours: false, value: e.data }]);
   }, []);
+
+  const handleFileChannel = useCallback(async (event) => {
+    const data = JSON.parse(event.data);
+    
+    if (data.type === 'file-start') {
+        setReceivingFile({
+            name: data.fileName,
+            size: data.fileSize,
+            chunks: [],
+            type: data.fileType // Add this
+        });
+    } else if (data.type === 'file-chunk') {
+        setReceivingFile(prev => ({
+            ...prev,
+            chunks: [...prev.chunks, new Uint8Array(data.chunk)]
+        }));
+        setFileProgress((data.chunkIndex / data.totalChunks) * 100);
+    } else if (data.type === 'file-end') {
+        // Combine chunks into single Uint8Array
+        const combinedChunks = new Uint8Array(receivingFile.size);
+        let offset = 0;
+        receivingFile.chunks.forEach(chunk => {
+            combinedChunks.set(chunk, offset);
+            offset += chunk.length;
+        });
+        
+        const fileBlob = new Blob([combinedChunks], { type: receivingFile.type });
+        const downloadUrl = URL.createObjectURL(fileBlob);
+        
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = receivingFile.name;
+        link.click();
+        
+        setReceivingFile({});
+        setFileProgress(0);
+    }
+}, [receivingFile]);
 
   const handleNewUserJoined = useCallback(
     async (data) => {
@@ -64,13 +108,14 @@ function Room() {
       console.log("Successful connection");
 
       dataChannel.current = peer.peer.createDataChannel("myDataChannel");
-      // fileChannel.current = peer.peer.createDataChannel("fileChannel")
+      fileChannel.current = peer.peer.createDataChannel("fileChannel")
       console.log("created dataChannel", dataChannel.current.readyState);
       // Receiving messages
       dataChannel.current.onmessage = handleIncomingMessage;
+      fileChannel.current.onmessage = handleFileChannel;
       //changes to be me here to receive files
     },
-    [handleIncomingMessage]
+    [handleIncomingMessage, handleFileChannel]
   );
 
   const handleNegoNeeded = useCallback(async () => {
@@ -155,6 +200,48 @@ function Room() {
       setFileName(file.name);
     } else setFileName("");
   };
+ 
+ 
+
+  const sendFile = useCallback(async () => {
+    if (!fileChannel.current || !files) return;
+
+    fileChannel.current.send(JSON.stringify({
+        type: 'file-start',
+        fileName: files.name,
+        fileSize: files.size,
+        fileType: files.type // Add this
+    }));
+
+    const reader = new FileReader();
+    let offset = 0;
+    
+    reader.onload = (e) => {
+        const arrayBuffer = e.target.result;
+        const chunk = Array.from(new Uint8Array(arrayBuffer));
+        
+        fileChannel.current.send(JSON.stringify({
+            type: 'file-chunk',
+            chunk: chunk,
+            chunkIndex: Math.floor(offset / CHUNK_SIZE),
+            totalChunks: Math.ceil(files.size / CHUNK_SIZE)
+        }));
+
+        offset += arrayBuffer.byteLength;
+        if (offset < files.size) {
+            readNextChunk();
+        } else {
+            fileChannel.current.send(JSON.stringify({ type: 'file-end' }));
+        }
+    };
+
+    const readNextChunk = () => {
+        const blob = files.slice(offset, offset + CHUNK_SIZE);
+        reader.readAsArrayBuffer(blob);
+    };
+
+    readNextChunk();
+}, [CHUNK_SIZE, files]);
 
   const endCall = useCallback(() => {
     // Stop all tracks in my stream
@@ -168,7 +255,6 @@ function Room() {
       remoteStream.getTracks().forEach((track) => track.stop());
       setRemoteStream(null);
     }
-
     // Reset call-related states
     setInCall(false);
     setIncomingCall(false);
@@ -176,21 +262,24 @@ function Room() {
   }, [myStream, remoteStream]);
 
   useEffect(() => {
-    if (dataChannel.current != null)
-      dataChannel.current.onmessage = handleIncomingMessage;
-  }, [handleIncomingMessage]);
-
-  useEffect(() => {
     peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
-
     peer.peer.ondatachannel = (event) => {
-
+      if (event.channel.label == "myDataChannel"){
       dataChannel.current = event.channel;
       console.log(
-        "Data channel on other side : ",
+        "Text Data channel on other side : ",
         dataChannel.current.readyState
       );
       dataChannel.current.onmessage = handleIncomingMessage;
+    }
+    else if (event.channel.label == "fileChannel"){
+      fileChannel.current = event.channel;
+      console.log(
+        "file data channel on other side: ",
+        fileChannel.current.readyState
+      )
+      fileChannel.current.onmessage = handleFileChannel;
+      } 
     };
 
     peer.peer.addEventListener("track", async (event) => {
@@ -201,11 +290,17 @@ function Room() {
     return () => {
       peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
     };
-  }, [handleNegoNeeded, handleIncomingMessage]);
+  }, [handleNegoNeeded, handleIncomingMessage, handleFileChannel]);
 
   useEffect(() => {
-    if (dataChannel != null) dataChannel.onmessage = handleIncomingMessage;
-  }, [dataChannel, handleIncomingMessage]);
+    if (dataChannel.current != null)
+      dataChannel.current.onmessage = handleIncomingMessage;
+  }, [handleIncomingMessage]);
+
+  useEffect(()=>{
+    if (fileChannel.current != null)
+      fileChannel.current.onmessage = handleFileChannel;
+  },[handleFileChannel])
 
   useEffect(() => {
     socket.on("user-joined", handleNewUserJoined);
@@ -290,7 +385,7 @@ function Room() {
               myStream={myStream}
               remoteStream={remoteStream}
               remoteEmail={remoteEmail}
-              className="flex lg:flex-row  flex-col justify-evenly items-end border-gray-400 border-[1px]"
+              className="flex lg:flex-row  flex-col justify-evenly  max-lg:items-center lg:items-end border-gray-400 border-[1px]"
             />
 
             <VideoCallButtons
@@ -310,17 +405,8 @@ function Room() {
               sendMessage={sendMessage}
               handleFileChange={handleFileChange}
               fileName={fileName}
-              sendFile={() => {
-                if (files && remoteSocketId) {
-                  dataChannel.current.send(files.name);
-                  setMessages((messages) => [
-                    ...messages,
-                    { yours: true, value: `Sent file: ${files.name}` },
-                  ]);
-                  setFileName("");
-                  setFiles(null);
-                }
-              }}
+              sendFile={sendFile}
+              fileProgress={fileProgress}
             />
 
           </div>

@@ -10,7 +10,8 @@ function ChatBox({
   sendMessage, 
   handleFileChange, 
   fileName, 
-  sendFile 
+  sendFile,
+  fileProgress 
 }) {
   const bottomRef = useRef();
 
@@ -78,6 +79,7 @@ function ChatBox({
             <label htmlFor="file">
               <MdOutlineAttachFile className="text-white mx-2 cursor-pointer text-3xl" />
             </label>
+            {fileProgress > 0 && <progress value={fileProgress} max="100" />}
           </div>
 
           <button
@@ -101,6 +103,7 @@ ChatBox.propTypes = {
   handleFileChange: PropTypes.func.isRequired,
   fileName: PropTypes.string,
   sendFile: PropTypes.func.isRequired,
+  fileProgress: PropTypes.number
 };
 
 export default ChatBox;
