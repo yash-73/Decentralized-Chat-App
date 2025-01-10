@@ -1,13 +1,12 @@
 import { useState, useCallback, useEffect, useContext, useRef } from "react";
 import { SocketContext } from "../provider/Socket";
 import peer from "../service/PeerService";
-import VideoCall from "../components/VideoCall";
-import "./Room.css";
 import { FcVideoCall } from "react-icons/fc";
 import { IoCall } from "react-icons/io5";
-
+import VideoCall from "../components/VideoCall";
 import VideoCallButtons from "../components/VideoCallButtons";
 import ChatBox from "../components/ChatBox";
+import "./Room.css";
 
 function Room() {
 
@@ -28,13 +27,14 @@ function Room() {
   const [files, setFiles] = useState();
   const [fileProgress, setFileProgress] = useState(0);
   const [receivingFile, setReceivingFile] = useState({});
-  
+
 
   const dataChannel = useRef();
   const fileChannel = useRef();
 
   const handleIncomingMessage = useCallback((e) => {
-    setMessages((messages) => [...messages, { yours: false, value: e.data }]);
+    const msg = JSON.parse(e.data)
+    setMessages((messages) => [...messages, {type: msg.type, yours: false , value: msg.value }]);
   }, []);
 
   const handleFileChannel = useCallback(async (event) => {
@@ -44,25 +44,45 @@ function Room() {
         setReceivingFile({
             name: data.fileName,
             size: data.fileSize,
-            chunks: [],
-            type: data.fileType // Add this
+            type: data.fileType,
+            chunks: new Array(Math.ceil(data.fileSize / CHUNK_SIZE)),
+            receivedChunks: 0
         });
     } else if (data.type === 'file-chunk') {
-        setReceivingFile(prev => ({
-            ...prev,
-            chunks: [...prev.chunks, new Uint8Array(data.chunk)]
-        }));
-        setFileProgress((data.chunkIndex / data.totalChunks) * 100);
+        setReceivingFile(prev => {
+            // Convert base64 chunk back to Uint8Array
+            const chunkArray = new Uint8Array(data.chunk);
+            
+            // Store chunk at correct index
+            prev.chunks[data.chunkIndex] = chunkArray;
+            const newReceivedChunks = prev.receivedChunks + 1;
+            
+            setFileProgress((newReceivedChunks / data.totalChunks) * 100);
+            
+            return {
+                ...prev,
+                receivedChunks: newReceivedChunks
+            };
+        });
     } else if (data.type === 'file-end') {
-        // Combine chunks into single Uint8Array
-        const combinedChunks = new Uint8Array(receivingFile.size);
-        let offset = 0;
+        // Calculate total size
+        let totalSize = 0;
         receivingFile.chunks.forEach(chunk => {
-            combinedChunks.set(chunk, offset);
-            offset += chunk.length;
+            if (chunk) totalSize += chunk.length;
+        });
+
+        // Create final array and combine chunks
+        const finalArray = new Uint8Array(totalSize);
+        let offset = 0;
+        
+        receivingFile.chunks.forEach(chunk => {
+            if (chunk) {
+                finalArray.set(chunk, offset);
+                offset += chunk.length;
+            }
         });
         
-        const fileBlob = new Blob([combinedChunks], { type: receivingFile.type });
+        const fileBlob = new Blob([finalArray], { type: receivingFile.type });
         const downloadUrl = URL.createObjectURL(fileBlob);
         
         const link = document.createElement('a');
@@ -70,10 +90,11 @@ function Room() {
         link.download = receivingFile.name;
         link.click();
         
+        URL.revokeObjectURL(downloadUrl); // Clean up the URL
         setReceivingFile({});
         setFileProgress(0);
     }
-}, [receivingFile]);
+}, [receivingFile, CHUNK_SIZE]);
 
   const handleNewUserJoined = useCallback(
     async (data) => {
@@ -186,8 +207,8 @@ function Room() {
     e.preventDefault();
     if (!remoteSocketId) return;
     if (text.length == 0) return;
-    dataChannel.current.send(text);
-    setMessages((messages) => [...messages, { yours: true, value: text }]);
+    dataChannel.current.send(JSON.stringify({type:'text', value: text}));
+    setMessages((messages) => [...messages, {type:'text', yours: true, value: text }]);
     setText("");
   };
 
@@ -200,48 +221,73 @@ function Room() {
       setFileName(file.name);
     } else setFileName("");
   };
- 
- 
 
   const sendFile = useCallback(async () => {
     if (!fileChannel.current || !files) return;
 
-    fileChannel.current.send(JSON.stringify({
-        type: 'file-start',
-        fileName: files.name,
-        fileSize: files.size,
-        fileType: files.type // Add this
-    }));
-
-    const reader = new FileReader();
-    let offset = 0;
-    
-    reader.onload = (e) => {
-        const arrayBuffer = e.target.result;
-        const chunk = Array.from(new Uint8Array(arrayBuffer));
-        
+    try {
+        // Send file metadata
         fileChannel.current.send(JSON.stringify({
-            type: 'file-chunk',
-            chunk: chunk,
-            chunkIndex: Math.floor(offset / CHUNK_SIZE),
-            totalChunks: Math.ceil(files.size / CHUNK_SIZE)
+            type: 'file-start',
+            fileName: files.name,
+            fileSize: files.size,
+            fileType: files.type,
         }));
 
-        offset += arrayBuffer.byteLength;
-        if (offset < files.size) {
-            readNextChunk();
-        } else {
-            fileChannel.current.send(JSON.stringify({ type: 'file-end' }));
-        }
-    };
+        const totalChunks = Math.ceil(files.size / CHUNK_SIZE);
+        let chunkIndex = 0;
+        
+        const reader = new FileReader();
+        
+        const readAndSendChunk = () => {
+            const start = chunkIndex * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, files.size);
+            const chunk = files.slice(start, end);
+            
+            reader.onload = () => {
+                const arrayBuffer = reader.result;
+                const chunkArray = Array.from(new Uint8Array(arrayBuffer));
+                
+                const chunkData = JSON.stringify({
+                    type: 'file-chunk',
+                    chunk: chunkArray,
+                    chunkIndex: chunkIndex,
+                    totalChunks: totalChunks
+                });
 
-    const readNextChunk = () => {
-        const blob = files.slice(offset, offset + CHUNK_SIZE);
-        reader.readAsArrayBuffer(blob);
-    };
+                // Check if channel is ready to send
+                if (fileChannel.current.bufferedAmount > fileChannel.current.bufferedAmountLowThreshold) {
+                    fileChannel.current.onbufferedamountlow = () => {
+                        fileChannel.current.send(chunkData);
+                        fileChannel.current.onbufferedamountlow = null;
+                        proceedToNextChunk();
+                    };
+                } else {
+                    fileChannel.current.send(chunkData);
+                    proceedToNextChunk();
+                }
+            };
 
-    readNextChunk();
-}, [CHUNK_SIZE, files]);
+            reader.readAsArrayBuffer(chunk);
+        };
+
+        const proceedToNextChunk = () => {
+            chunkIndex++;
+            if (chunkIndex < totalChunks) {
+                readAndSendChunk();
+            } else {
+                fileChannel.current.send(JSON.stringify({ type: 'file-end' }));
+            }
+        };
+
+        // Start the process
+        readAndSendChunk();
+        
+    } catch (error) {
+        console.error('Error sending file:', error);
+    }
+}, [files, CHUNK_SIZE]);
+
 
   const endCall = useCallback(() => {
     // Stop all tracks in my stream
