@@ -7,9 +7,8 @@ import VideoCall from "../components/VideoCall";
 import VideoCallButtons from "../components/VideoCallButtons";
 import ChatBox from "../components/ChatBox";
 import "./Room.css";
-
+import FileBox from "../components/FileBox";
 function Room() {
-
   const CHUNK_SIZE = 16 * 1024;
 
   const socket = useContext(SocketContext);
@@ -26,75 +25,173 @@ function Room() {
   const [fileName, setFileName] = useState("");
   const [files, setFiles] = useState();
   const [fileProgress, setFileProgress] = useState(0);
-  const [receivingFile, setReceivingFile] = useState({});
+  const [receivingFile, setReceivingFile] = useState(null);
 
+  const [sendStatus, setSendStatus] = useState("Send");
+  const [downloadStatus, setDownloadStatus] = useState("Download");
 
   const dataChannel = useRef();
   const fileChannel = useRef();
 
   const handleIncomingMessage = useCallback((e) => {
-    const msg = JSON.parse(e.data)
-    setMessages((messages) => [...messages, {type: msg.type, yours: false , value: msg.value }]);
+    console.log("Message received at: ", Date.now());
+    const msg = JSON.parse(e.data);
+    setMessages((messages) => [
+      ...messages,
+      { type: msg.type, yours: false, value: msg.value },
+    ]);
   }, []);
 
-  const handleFileChannel = useCallback(async (event) => {
-    const data = JSON.parse(event.data);
-    
-    if (data.type === 'file-start') {
-        setReceivingFile({
-            name: data.fileName,
-            size: data.fileSize,
-            type: data.fileType,
-            chunks: new Array(Math.ceil(data.fileSize / CHUNK_SIZE)),
-            receivedChunks: 0
-        });
-    } else if (data.type === 'file-chunk') {
-        setReceivingFile(prev => {
-            // Convert base64 chunk back to Uint8Array
-            const chunkArray = new Uint8Array(data.chunk);
-            
-            // Store chunk at correct index
-            prev.chunks[data.chunkIndex] = chunkArray;
-            const newReceivedChunks = prev.receivedChunks + 1;
-            
-            setFileProgress((newReceivedChunks / data.totalChunks) * 100);
-            
-            return {
-                ...prev,
-                receivedChunks: newReceivedChunks
+  const sendFile = useCallback(async () => {
+    if (!fileChannel.current || !files) return;
+    try {
+      const totalChunks = Math.ceil(files.size / CHUNK_SIZE);
+      let chunkIndex = 0;
+      const reader = new FileReader();
+      const readAndSendChunk = () => {
+        const start = chunkIndex * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, files.size);
+        const chunk = files.slice(start, end);
+
+        reader.onload = () => {
+          const arrayBuffer = reader.result;
+          const chunkArray = Array.from(new Uint8Array(arrayBuffer));
+
+          const chunkData = JSON.stringify({
+            type: "file-chunk",
+            chunk: chunkArray,
+            chunkIndex: chunkIndex,
+            totalChunks: totalChunks,
+          });
+
+          // Check if channel is ready to send
+          if (
+            fileChannel.current.bufferedAmount >
+            fileChannel.current.bufferedAmountLowThreshold
+          ) {
+            fileChannel.current.onbufferedamountlow = () => {
+              fileChannel.current.send(chunkData);
+              fileChannel.current.onbufferedamountlow = null;
+              proceedToNextChunk();
             };
+          } else {
+            fileChannel.current.send(chunkData);
+            proceedToNextChunk();
+          }
+        };
+
+        reader.readAsArrayBuffer(chunk);
+      };
+
+      const proceedToNextChunk = () => {
+        chunkIndex++;
+        if (chunkIndex < totalChunks) {
+          readAndSendChunk();
+        } else {
+          fileChannel.current.send(JSON.stringify({ type: "file-end" }));
+        }
+      };
+
+      // Start the process
+      readAndSendChunk();
+    } catch (error) {
+      console.error("Error sending file:", error);
+    }
+  }, [files, CHUNK_SIZE]);
+
+  // Receiver code
+  const handleIncomingFile = useCallback(
+    async (event) => {
+      const fileData = JSON.parse(event.data);
+
+      if (fileData.type == "file-start") {
+        setReceivingFile({
+          name: fileData.fileName,
+          size: fileData.fileSize,
+          type: fileData.fileType,
+          chunks: new Array(Math.ceil(fileData.fileSize / CHUNK_SIZE)),
+          receivedChunks: 0,
         });
-    } else if (data.type === 'file-end') {
+      } else if (fileData.type == "start-download") {
+        console.log("Sending file now");
+        setSendStatus("Sending...");
+        await sendFile();
+      } else if (fileData.type == "file-chunk") {
+        setReceivingFile((prev) => {
+          // Convert base64 chunk back to Uint8Array
+          const chunkArray = new Uint8Array(fileData.chunk);
+
+          // Store chunk at correct index
+          prev.chunks[fileData.chunkIndex] = chunkArray;
+          const newReceivedChunks = prev.receivedChunks + 1;
+
+          setFileProgress((newReceivedChunks / fileData.totalChunks) * 100);
+
+          return {
+            ...prev,
+            receivedChunks: newReceivedChunks,
+          };
+        });
+      } else if (fileData.type === "file-end") {
         // Calculate total size
         let totalSize = 0;
-        receivingFile.chunks.forEach(chunk => {
-            if (chunk) totalSize += chunk.length;
+        receivingFile.chunks.forEach((chunk) => {
+          if (chunk) totalSize += chunk.length;
         });
 
         // Create final array and combine chunks
         const finalArray = new Uint8Array(totalSize);
         let offset = 0;
-        
-        receivingFile.chunks.forEach(chunk => {
-            if (chunk) {
-                finalArray.set(chunk, offset);
-                offset += chunk.length;
-            }
+
+        receivingFile.chunks.forEach((chunk) => {
+          if (chunk) {
+            finalArray.set(chunk, offset);
+            offset += chunk.length;
+          }
         });
-        
+
         const fileBlob = new Blob([finalArray], { type: receivingFile.type });
         const downloadUrl = URL.createObjectURL(fileBlob);
-        
-        const link = document.createElement('a');
+
+        const link = document.createElement("a");
         link.href = downloadUrl;
         link.download = receivingFile.name;
         link.click();
-        
+
         URL.revokeObjectURL(downloadUrl); // Clean up the URL
-        setReceivingFile({});
+        setReceivingFile(null);
         setFileProgress(0);
+        setFiles(null);
+        setFileName(null);
+        setDownloadStatus("Send");
+      }
+    },
+    [sendFile, CHUNK_SIZE, receivingFile]
+  );
+
+  const handleSendFileButton = (e) => {
+    e.preventDefault();
+    if (fileChannel && files) {
+      fileChannel.current.send(
+        JSON.stringify({
+          type: "file-start",
+          fileName: files.name,
+          fileSize: files.size,
+          fileType: files.type,
+        })
+      );
     }
-}, [receivingFile, CHUNK_SIZE]);
+    console.log("Button clicked");
+    setSendStatus("Waiting for acceptance");
+  };
+
+  const sendDownloadRequest = (e) => {
+    e.preventDefault();
+    if (fileChannel) {
+      fileChannel.current.send(JSON.stringify({ type: "start-download" }));
+      setDownloadStatus("Downloading...");
+    }
+  };
 
   const handleNewUserJoined = useCallback(
     async (data) => {
@@ -129,14 +226,16 @@ function Room() {
       console.log("Successful connection");
 
       dataChannel.current = peer.peer.createDataChannel("myDataChannel");
-      fileChannel.current = peer.peer.createDataChannel("fileChannel")
+      fileChannel.current = peer.peer.createDataChannel("fileChannel");
+
       console.log("created dataChannel", dataChannel.current.readyState);
       // Receiving messages
+      fileChannel.current.onmessage = handleIncomingFile;
       dataChannel.current.onmessage = handleIncomingMessage;
-      fileChannel.current.onmessage = handleFileChannel;
+
       //changes to be me here to receive files
     },
-    [handleIncomingMessage, handleFileChannel]
+    [handleIncomingMessage, handleIncomingFile]
   );
 
   const handleNegoNeeded = useCallback(async () => {
@@ -207,8 +306,12 @@ function Room() {
     e.preventDefault();
     if (!remoteSocketId) return;
     if (text.length == 0) return;
-    dataChannel.current.send(JSON.stringify({type:'text', value: text}));
-    setMessages((messages) => [...messages, {type:'text', yours: true, value: text }]);
+    console.log("Message sent at: ", Date.now());
+    dataChannel.current.send(JSON.stringify({ type: "text", value: text }));
+    setMessages((messages) => [
+      ...messages,
+      { type: "text", yours: true, value: text },
+    ]);
     setText("");
   };
 
@@ -221,73 +324,6 @@ function Room() {
       setFileName(file.name);
     } else setFileName("");
   };
-
-  const sendFile = useCallback(async () => {
-    if (!fileChannel.current || !files) return;
-
-    try {
-        // Send file metadata
-        fileChannel.current.send(JSON.stringify({
-            type: 'file-start',
-            fileName: files.name,
-            fileSize: files.size,
-            fileType: files.type,
-        }));
-
-        const totalChunks = Math.ceil(files.size / CHUNK_SIZE);
-        let chunkIndex = 0;
-        
-        const reader = new FileReader();
-        
-        const readAndSendChunk = () => {
-            const start = chunkIndex * CHUNK_SIZE;
-            const end = Math.min(start + CHUNK_SIZE, files.size);
-            const chunk = files.slice(start, end);
-            
-            reader.onload = () => {
-                const arrayBuffer = reader.result;
-                const chunkArray = Array.from(new Uint8Array(arrayBuffer));
-                
-                const chunkData = JSON.stringify({
-                    type: 'file-chunk',
-                    chunk: chunkArray,
-                    chunkIndex: chunkIndex,
-                    totalChunks: totalChunks
-                });
-
-                // Check if channel is ready to send
-                if (fileChannel.current.bufferedAmount > fileChannel.current.bufferedAmountLowThreshold) {
-                    fileChannel.current.onbufferedamountlow = () => {
-                        fileChannel.current.send(chunkData);
-                        fileChannel.current.onbufferedamountlow = null;
-                        proceedToNextChunk();
-                    };
-                } else {
-                    fileChannel.current.send(chunkData);
-                    proceedToNextChunk();
-                }
-            };
-
-            reader.readAsArrayBuffer(chunk);
-        };
-
-        const proceedToNextChunk = () => {
-            chunkIndex++;
-            if (chunkIndex < totalChunks) {
-                readAndSendChunk();
-            } else {
-                fileChannel.current.send(JSON.stringify({ type: 'file-end' }));
-            }
-        };
-
-        // Start the process
-        readAndSendChunk();
-        
-    } catch (error) {
-        console.error('Error sending file:', error);
-    }
-}, [files, CHUNK_SIZE]);
-
 
   const endCall = useCallback(() => {
     // Stop all tracks in my stream
@@ -310,22 +346,21 @@ function Room() {
   useEffect(() => {
     peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
     peer.peer.ondatachannel = (event) => {
-      if (event.channel.label == "myDataChannel"){
-      dataChannel.current = event.channel;
-      console.log(
-        "Text Data channel on other side : ",
-        dataChannel.current.readyState
-      );
-      dataChannel.current.onmessage = handleIncomingMessage;
-    }
-    else if (event.channel.label == "fileChannel"){
-      fileChannel.current = event.channel;
-      console.log(
-        "file data channel on other side: ",
-        fileChannel.current.readyState
-      )
-      fileChannel.current.onmessage = handleFileChannel;
-      } 
+      if (event.channel.label == "myDataChannel") {
+        dataChannel.current = event.channel;
+        console.log(
+          "Text Data channel on other side : ",
+          dataChannel.current.readyState
+        );
+        dataChannel.current.onmessage = handleIncomingMessage;
+      } else if (event.channel.label == "fileChannel") {
+        fileChannel.current = event.channel;
+        console.log(
+          "file data channel on other side: ",
+          fileChannel.current.readyState
+        );
+        fileChannel.current.onmessage = handleIncomingFile;
+      }
     };
 
     peer.peer.addEventListener("track", async (event) => {
@@ -336,17 +371,17 @@ function Room() {
     return () => {
       peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
     };
-  }, [handleNegoNeeded, handleIncomingMessage, handleFileChannel]);
+  }, [handleNegoNeeded, handleIncomingMessage, handleIncomingFile]);
 
   useEffect(() => {
     if (dataChannel.current != null)
       dataChannel.current.onmessage = handleIncomingMessage;
   }, [handleIncomingMessage]);
 
-  useEffect(()=>{
+  useEffect(() => {
     if (fileChannel.current != null)
-      fileChannel.current.onmessage = handleFileChannel;
-  },[handleFileChannel])
+      fileChannel.current.onmessage = handleIncomingFile;
+  }, [handleIncomingFile]);
 
   useEffect(() => {
     socket.on("user-joined", handleNewUserJoined);
@@ -395,8 +430,19 @@ function Room() {
   ]);
 
   return (
-    <div className="flex justify-center items-center bg-[#181818] text-white min-h-[100vh] ">
-      <div className="flex flex-col my-8 md:w-[80%] min-w-[300px] border-2 rounded-2xl border-gray-400">
+    <div className="flex justify-center flex-row px-4 items-center bg-[#181818] text-white min-h-[100vh] ">
+      <FileBox
+        className="w-[25%]"
+        fileName={fileName}
+        files={files}
+        handleSendFileButton={handleSendFileButton}
+        receivingFile={receivingFile}
+        fileProgress={fileProgress}
+        sendDownloadRequest={sendDownloadRequest}
+        sendStatus={sendStatus}
+        downloadStatus={downloadStatus}
+      />
+      <div className="flex flex-col my-8 w-[50%] min-w-[300px] border-2 rounded-2xl border-gray-400 mx-4">
         <div className="flex flex-row justify-between items-center px-4 py-2">
           <div>
             {remoteSocketId ? `Connected to ${remoteEmail}` : `Empty Room`}
@@ -452,12 +498,11 @@ function Room() {
               handleFileChange={handleFileChange}
               fileName={fileName}
               sendFile={sendFile}
-              fileProgress={fileProgress}
             />
-
           </div>
         )}
       </div>
+      <div className="w-[25%]"></div>
     </div>
   );
 }
