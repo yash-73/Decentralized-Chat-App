@@ -8,6 +8,7 @@ import VideoCallButtons from "../components/VideoCallButtons";
 import ChatBox from "../components/ChatBox";
 import "./Room.css";
 import FileBox from "../components/FileBox";
+import {encode, decode} from 'base64-arraybuffer'
 function Room() {
   const CHUNK_SIZE = 16 * 1024;
 
@@ -29,6 +30,7 @@ function Room() {
 
   const [sendStatus, setSendStatus] = useState("Send");
   const [downloadStatus, setDownloadStatus] = useState("Download");
+  const [fileDownloaded, setFileDownloaded] = useState(false);
 
   const dataChannel = useRef();
   const fileChannel = useRef();
@@ -55,7 +57,8 @@ function Room() {
 
         reader.onload = () => {
           const arrayBuffer = reader.result;
-          const chunkArray = Array.from(new Uint8Array(arrayBuffer));
+          // const chunkArray = Array.from(new Uint8Array(arrayBuffer));
+          const chunkArray = encode(arrayBuffer);
 
           const chunkData = JSON.stringify({
             type: "file-chunk",
@@ -70,11 +73,14 @@ function Room() {
             fileChannel.current.bufferedAmountLowThreshold
           ) {
             fileChannel.current.onbufferedamountlow = () => {
+              console.log("Sending chunk", chunkIndex, chunk.byteLength);
               fileChannel.current.send(chunkData);
+              setFileProgress((chunkIndex+1/totalChunks) * 100)
               fileChannel.current.onbufferedamountlow = null;
               proceedToNextChunk();
             };
           } else {
+            console.log("Sending chunk", chunkIndex, chunk.byteLength);
             fileChannel.current.send(chunkData);
             proceedToNextChunk();
           }
@@ -88,6 +94,10 @@ function Room() {
         if (chunkIndex < totalChunks) {
           readAndSendChunk();
         } else {
+          setSendStatus("Sent")
+          setFiles(null);
+          setFileName(null)
+          setFileProgress(0);
           fileChannel.current.send(JSON.stringify({ type: "file-end" }));
         }
       };
@@ -105,12 +115,15 @@ function Room() {
       const fileData = JSON.parse(event.data);
 
       if (fileData.type == "file-start") {
+        setFileDownloaded(false);
         setReceivingFile({
           name: fileData.fileName,
           size: fileData.fileSize,
           type: fileData.fileType,
           chunks: new Array(Math.ceil(fileData.fileSize / CHUNK_SIZE)),
           receivedChunks: 0,
+          totalChunks: Math.ceil(fileData.fileSize / CHUNK_SIZE), // Add totalChunks to state
+          isComplete: false // Add flag to track completion
         });
       } else if (fileData.type == "start-download") {
         console.log("Sending file now");
@@ -118,56 +131,103 @@ function Room() {
         await sendFile();
       } else if (fileData.type == "file-chunk") {
         setReceivingFile((prev) => {
-          // Convert base64 chunk back to Uint8Array
-          const chunkArray = new Uint8Array(fileData.chunk);
+          if (!prev) return prev;
 
-          // Store chunk at correct index
-          prev.chunks[fileData.chunkIndex] = chunkArray;
+          // Convert chunk data
+          const chunkArray = new Uint8Array(decode(fileData.chunk));
+          console.log("Received chunk", fileData.chunkIndex, chunkArray.length);
+
+          // Create new chunks array to avoid mutation
+          const newChunks = [...prev.chunks];
+          newChunks[fileData.chunkIndex] = chunkArray;
+          
           const newReceivedChunks = prev.receivedChunks + 1;
-
           setFileProgress((newReceivedChunks / fileData.totalChunks) * 100);
+
+          // Check if this was the last chunk we were waiting for
+          const isComplete = newReceivedChunks === prev.totalChunks;
+          
+          // If this is the last chunk and we already got the file-end message,
+          // trigger the file assembly
+          if (isComplete && prev.receivedEndSignal) {
+            setTimeout(() => assembleAndDownloadFile(prev), 100);
+          }
 
           return {
             ...prev,
+            chunks: newChunks,
             receivedChunks: newReceivedChunks,
+            isComplete
           };
         });
       } else if (fileData.type === "file-end") {
-        // Calculate total size
-        let totalSize = 0;
-        receivingFile.chunks.forEach((chunk) => {
-          if (chunk) totalSize += chunk.length;
-        });
+        setReceivingFile((prev) => {
+          if (!prev) return prev;
 
-        // Create final array and combine chunks
-        const finalArray = new Uint8Array(totalSize);
-        let offset = 0;
-
-        receivingFile.chunks.forEach((chunk) => {
-          if (chunk) {
-            finalArray.set(chunk, offset);
-            offset += chunk.length;
+          // If we already have all chunks, assemble the file
+          if (prev.isComplete) {
+            setTimeout(() => assembleAndDownloadFile(prev), 100);
+            return prev;
           }
+          // Otherwise, mark that we received the end signal and wait
+          // for the remaining chunks
+          return {
+            ...prev,
+            receivedEndSignal: true
+          };
         });
-
-        const fileBlob = new Blob([finalArray], { type: receivingFile.type });
-        const downloadUrl = URL.createObjectURL(fileBlob);
-
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = receivingFile.name;
-        link.click();
-
-        URL.revokeObjectURL(downloadUrl); // Clean up the URL
-        setReceivingFile(null);
-        setFileProgress(0);
-        setFiles(null);
-        setFileName(null);
-        setDownloadStatus("Send");
       }
     },
-    [sendFile, CHUNK_SIZE, receivingFile]
-  );
+    [sendFile, CHUNK_SIZE,assembleAndDownloadFile]
+);
+
+// Separate function to handle file assembly and download
+const assembleAndDownloadFile =useCallback( (receivingFile) => {
+
+  if(fileDownloaded) return;
+  try {
+      // Verify all chunks are present
+      const missingChunks = receivingFile.chunks.findIndex(chunk => !chunk);
+      if (missingChunks !== -1) {
+          throw new Error(`Missing chunk at index ${missingChunks}`);
+      }
+
+      // Calculate total size
+      let totalSize = 0;
+      receivingFile.chunks.forEach((chunk) => {
+          if (chunk) totalSize += chunk.length;
+      });
+
+      // Create final array and combine chunks
+      const finalArray = new Uint8Array(totalSize);
+      let offset = 0;
+
+      receivingFile.chunks.forEach((chunk) => {
+          if (chunk) {
+              finalArray.set(chunk, offset);
+              offset += chunk.length;
+          }
+      });
+
+      const fileBlob = new Blob([finalArray], { type: receivingFile.type });
+      const downloadUrl = URL.createObjectURL(fileBlob);
+
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = receivingFile.name;
+      link.click();
+
+      URL.revokeObjectURL(downloadUrl);
+      setReceivingFile(null);
+      setFileProgress(0);
+      setDownloadStatus("Send");
+      console.log("Original size:", receivingFile.size, "Assembled size:", totalSize);
+      setFileDownloaded(true);
+  } catch (error) {
+      console.error("Error assembling file:", error);
+      alert("Error assembling file: " + error.message);
+  }
+},[fileDownloaded]);
 
   const handleSendFileButton = (e) => {
     e.preventDefault();
@@ -431,6 +491,7 @@ function Room() {
 
   return (
     <div className="flex justify-center flex-row px-4 items-center bg-[#181818] text-white min-h-[100vh] ">
+
       <FileBox
         className="w-[25%]"
         fileName={fileName}
@@ -442,12 +503,14 @@ function Room() {
         sendStatus={sendStatus}
         downloadStatus={downloadStatus}
       />
+
       <div className="flex flex-col my-8 w-[50%] min-w-[300px] border-2 rounded-2xl border-gray-400 mx-4">
         <div className="flex flex-row justify-between items-center px-4 py-2">
           <div>
             {remoteSocketId ? `Connected to ${remoteEmail}` : `Empty Room`}
           </div>
           <div>
+
             {remoteSocketId && (
               <button
                 onClick={callUser}
@@ -457,6 +520,7 @@ function Room() {
                 <FcVideoCall className="text-4xl " />
               </button>
             )}
+
           </div>
         </div>
 
@@ -471,6 +535,7 @@ function Room() {
             </button>
           </div>
         )}
+
         {inCall && (
           <div className="flex flex-col">
             <VideoCall
@@ -501,6 +566,7 @@ function Room() {
             />
           </div>
         )}
+
       </div>
       <div className="w-[25%]"></div>
     </div>

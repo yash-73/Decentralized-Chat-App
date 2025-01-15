@@ -36,7 +36,7 @@ function FileBox({
   return (
     <div
       className={`${className} flex flex-col items-center justify-center  bg-gray-900`}
-    >
+    > 
       {fileName && (
         <div className="w-full flex flex-col  p-4 top-0 border-2 border-gray-400 left-0 backdrop-blur-md z-10 justify-evenly items-center">
           <div className="flex flex-col items-center">
