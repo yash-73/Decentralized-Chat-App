@@ -1,14 +1,20 @@
 import { useContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { SocketContext } from "../provider/Socket";
+import NavBar from "../components/NavBar";
+import Login from "../components/Login";
+import JoinRoom from "../components/JoinRoom";
+import axios from "axios";
 
 function Home() {
+
 
     const navigate = useNavigate();
     const socket = useContext(SocketContext);
 
     const [email,setEmail] = useState('');
     const [roomId, setRoomId] = useState('');
+    
 
 
     const handleJoinRoom = ()=>{
@@ -36,16 +42,21 @@ function Home() {
     
 
     return (
-        <div className="flex flex-row justify-center h-[90vh] items-center">
-        <div className="flex flex-col justify-around h-[30vh] bg-gray-300 border-[1px] focus:border-[2px] no-underline focus:border-gray-400 border-gray-400 rounded-xl p-8">
-            <input type="text" value={email} onChange={(e)=> setEmail(e.target.value)} placeholder='Enter your email here'
-            className="pl-2 "/>
-            <input type='text' value={roomId} onChange={(e)=> setRoomId(e.target.value)} placeholder='Enter room code' 
-            className="pl-2"/>
-            <button onClick={handleJoinRoom} className="bg-white border-[1px] border-gray-400 rounded-md focus:font-semibold">Enter room</button>
-        </div>
+        <div className="flex flex-col  justify-center items-center">
+            <div className={`flex flex-col justify-evenly items-center w-full h-[100vh] bg-black`}>
+                <div className="flex flex-row justify-evenly items-center w-full  ">
+                <div className=" text-[70px] max-w-[50%] break-words font-bold text-gray-300  text-left px-[5%]">
+                    Chat with your friends with complete privacy 
+                </div>
+                <div className="flex flex-col h-full max-w-[50%] items-center justify-center px-[5%] ">
+                    <JoinRoom/>
+                </div>
+            </div>
+            <button className="text-white my-4 px-4 py-2 w-[20%] outline-none  bg-gray-900 hover:bg-gray-100 shadow-lg delay-75 transition-all hover:text-gray-900 rounded-lg font-semibold ">Create Room</button></div>
         </div>
     )
 }
 
 export default Home
+// hover:shadow-[0_0_5px_1px]
+// hover:shadow-gray-300
