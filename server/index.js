@@ -10,25 +10,39 @@ const app = new express()
 
 const emailToSocketMap = new Map();
 const socketToEmailMap = new Map();
-
+const rooms = new Map();
 app.use(bodyParser.json())
 
 io.on('connection', (socket)=>{
     console.log("New connection: ", socket.id);
 
+    socket.on('create-room' , ({roomNum, roomPassword})=>{
+            rooms.set(roomNum, roomPassword);
+            io.to(socket.id).emit('room-created')
+    })
+
     socket.on('join-req', (data)=>{
-        const {from , room} = data;
+        const {from , room , roomPass} = data;
 
         emailToSocketMap.set(from, socket.id);
         socketToEmailMap.set(socket.id, from);
 
-        console.log(from , " is joining the room ", room)
+        if (rooms.has(room)){
+            if(rooms.get(room) === roomPass){
+                console.log(from , " is joining the room ", room)
+                socket.join(room);
+                io.to(room).emit('user-joined', {email: from, socketId: socket.id})
+                io.to(socket.id).emit('joining-room', {room})
+            }
+            else{
+                io.to(socket.id).emit('wrong-password');
+            }
+        }
+        else{
+            io.to(socket.id).emit('no-room-found')
+        }
 
-        socket.join(room);
-
-        io.to(room).emit('user-joined', {email: from, socketId: socket.id})
-
-        io.to(socket.id).emit('joining-room', {room})
+        
     })
 
     socket.on('connect-user', ({to, offer})=>{

@@ -1,18 +1,30 @@
 import {useState} from 'react'
 import PropTypes from 'prop-types'
-function JoinRoom({className}) {
+function JoinRoom({className, handleJoinRoom}) {
 
+    const [username, setUsername] = useState("")
     const [roomNum, setRoomNum] = useState("");
     const [roomPassword, setRoomPassword] = useState("");
+    const [error, setError] = useState("")
 
     const handleSubmit = (e)=>{
-        e.preventDefault();
-        if(roomNum.length == 0 || roomPassword.length == 0) {
-            console.log("Empty") 
-        return;}
-        console.log({
-            roomNum, roomPassword
-        });
+      e.preventDefault();
+      if(username.length == 0){
+          setError("Username cannot be empty");
+          return;
+      }
+
+      if(roomPassword.length < 6){
+          setError("Password must contain atleast 6 characters");
+          return;
+      }
+
+      handleJoinRoom(username, roomNum, roomPassword);
+      
+      console.log({
+          username,
+          roomNum, roomPassword
+      });
     }
 
     return (
@@ -25,21 +37,31 @@ function JoinRoom({className}) {
 
                     <div className='my-4 text-[18px] font-bold text-gray-300'>Join Room</div>
 
+
                     <div className='flex flex-col my-2 text-gray-300'>
-                    <label className='text-[14px] font-semibold' htmlFor="roomNumber">Room Number</label>
+                    <label className='text-[14px] font-semibold' htmlFor="JoinUsername">Username</label>
                     <input type="text"
                     className='bg-transparent border-[1px] focus:border-white text-gray-300  pl-2 py-1 border-gray-800 outline-none' 
-                      id='roomNumber'
+                      id='joinUsername'
+                      autoComplete="off"
+                      value={username}
+                      onChange={(e)=>{setUsername(e.target.value)}}/>
+                    </div>
+                    <div className='flex flex-col my-2 text-gray-300'>
+                    <label className='text-[14px] font-semibold' htmlFor="joinRoomNumber">Room Number</label>
+                    <input type="text"
+                    className='bg-transparent border-[1px] focus:border-white text-gray-300  pl-2 py-1 border-gray-800 outline-none' 
+                      id='joinRoomNumber'
                       autoComplete="off"
                       value={roomNum}
                       onChange={(e)=>{setRoomNum(e.target.value)}}/>
                     </div>
 
                     <div className='flex flex-col my-2 text-gray-300'>
-                    <label className='text-14px font-semibold' htmlFor="roomPassword">Room Password</label>
+                    <label className='text-14px font-semibold' htmlFor="joinRoomPassword">Room Password</label>
                     <input type="text"
                     className='bg-transparent border-[1px] focus:border-white   pl-2 py-1 border-gray-600 outline-none' 
-                      id='roomPassword'
+                      id='joinRoomPassword'
                     autoComplete="off"
 
                       value={roomPassword}

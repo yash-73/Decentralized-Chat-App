@@ -109,6 +109,54 @@ function Room() {
     }
   }, [files, CHUNK_SIZE]);
 
+  // Separate function to handle file assembly and download
+const assembleAndDownloadFile =useCallback( (receivingFile) => {
+
+  if(fileDownloaded) return;
+  try {
+      // Verify all chunks are present
+      const missingChunks = receivingFile.chunks.findIndex(chunk => !chunk);
+      if (missingChunks !== -1) {
+          throw new Error(`Missing chunk at index ${missingChunks}`);
+      }
+
+      // Calculate total size
+      let totalSize = 0;
+      receivingFile.chunks.forEach((chunk) => {
+          if (chunk) totalSize += chunk.length;
+      });
+
+      // Create final array and combine chunks
+      const finalArray = new Uint8Array(totalSize);
+      let offset = 0;
+
+      receivingFile.chunks.forEach((chunk) => {
+          if (chunk) {
+              finalArray.set(chunk, offset);
+              offset += chunk.length;
+          }
+      });
+
+      const fileBlob = new Blob([finalArray], { type: receivingFile.type });
+      const downloadUrl = URL.createObjectURL(fileBlob);
+
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = receivingFile.name;
+      link.click();
+
+      URL.revokeObjectURL(downloadUrl);
+      setReceivingFile(null);
+      setFileProgress(0);
+      setDownloadStatus("Send");
+      console.log("Original size:", receivingFile.size, "Assembled size:", totalSize);
+      setFileDownloaded(true);
+  } catch (error) {
+      console.error("Error assembling file:", error);
+      alert("Error assembling file: " + error.message);
+  }
+},[fileDownloaded]);
+
   // Receiver code
   const handleIncomingFile = useCallback(
     async (event) => {
@@ -181,53 +229,7 @@ function Room() {
     [sendFile, CHUNK_SIZE,assembleAndDownloadFile]
 );
 
-// Separate function to handle file assembly and download
-const assembleAndDownloadFile =useCallback( (receivingFile) => {
 
-  if(fileDownloaded) return;
-  try {
-      // Verify all chunks are present
-      const missingChunks = receivingFile.chunks.findIndex(chunk => !chunk);
-      if (missingChunks !== -1) {
-          throw new Error(`Missing chunk at index ${missingChunks}`);
-      }
-
-      // Calculate total size
-      let totalSize = 0;
-      receivingFile.chunks.forEach((chunk) => {
-          if (chunk) totalSize += chunk.length;
-      });
-
-      // Create final array and combine chunks
-      const finalArray = new Uint8Array(totalSize);
-      let offset = 0;
-
-      receivingFile.chunks.forEach((chunk) => {
-          if (chunk) {
-              finalArray.set(chunk, offset);
-              offset += chunk.length;
-          }
-      });
-
-      const fileBlob = new Blob([finalArray], { type: receivingFile.type });
-      const downloadUrl = URL.createObjectURL(fileBlob);
-
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = receivingFile.name;
-      link.click();
-
-      URL.revokeObjectURL(downloadUrl);
-      setReceivingFile(null);
-      setFileProgress(0);
-      setDownloadStatus("Send");
-      console.log("Original size:", receivingFile.size, "Assembled size:", totalSize);
-      setFileDownloaded(true);
-  } catch (error) {
-      console.error("Error assembling file:", error);
-      alert("Error assembling file: " + error.message);
-  }
-},[fileDownloaded]);
 
   const handleSendFileButton = (e) => {
     e.preventDefault();
@@ -490,7 +492,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
   ]);
 
   return (
-    <div className="flex justify-center flex-row px-4 items-center bg-[#181818] text-white min-h-[100vh] ">
+    <div className="flex justify-center flex-row px-4 items-center bg-black text-white min-h-[100vh] ">
 
       <FileBox
         className="w-[25%]"
@@ -525,7 +527,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
         </div>
 
         {incomingCall && (
-          <div className="flex flex-row justify-between px-4 py-2">
+          <div className="flex flex-row justify-between  bg-gray-400 px-4 py-2 animate-pulse">
             <p>Call from {remoteEmail}</p>
             <button
               className="bg-blue-500 px-2 py-1 rounded-md hover:bg-blue-600 text-white shadow-md"

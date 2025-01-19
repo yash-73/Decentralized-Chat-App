@@ -1,26 +1,27 @@
 import { useContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { SocketContext } from "../provider/Socket";
-import NavBar from "../components/NavBar";
-import Login from "../components/Login";
 import JoinRoom from "../components/JoinRoom";
-import axios from "axios";
+import CreateRoom from "../components/CreateRoom";
 
 function Home() {
 
+    
 
+    const [error, setError] = useState("")
     const navigate = useNavigate();
     const socket = useContext(SocketContext);
 
-    const [email,setEmail] = useState('');
-    const [roomId, setRoomId] = useState('');
     
 
-
-    const handleJoinRoom = ()=>{
-        console.log("Sending join room request now from", email, "to room", roomId)
-        socket.emit('join-req', {from: email,  room: roomId})
+    const handleRoomCreate =async (username, roomNum, roomPassword)=>{
+        socket.emit('create-room', {roomNum, roomPassword});
+        handleJoinRoom(username, roomNum, roomPassword)
     }
+    const handleJoinRoom = useCallback((username, roomNum , roomPassword)=>{
+        console.log("Sending join room request now from", username, "to room", roomNum)
+        socket.emit('join-req', {from: username,  room: roomNum , roomPass: roomPassword})
+    },[socket])
 
     const handleJoiningRoom = useCallback(({room})=>{
             console.log("Joining room", room);
@@ -29,30 +30,45 @@ function Home() {
 
 
     useEffect(() => {
+        socket.on('room-created' , ()=>{console.log("Room created ")})
+        socket.on('wrong-password', ()=>{setError('Wrong password')})
+        socket.on('no-room-found', ()=>{setError("No Room found")})
         socket.on('connect', () => console.log('Socket connected:', socket.id));
         socket.on('disconnect', () => console.log('Socket disconnected'));
         socket.on('joining-room', handleJoiningRoom);
+
     
         return () => {
+            socket.off('room-created')
             socket.off('connect');
             socket.off('disconnect');
             socket.off('joining-room')
+            socket.off('wrong-password');
+            socket.off('no-room-found')
         };
-    }, [socket, handleJoiningRoom]);
+    }, [socket, handleJoiningRoom, handleJoinRoom]);
     
 
     return (
         <div className="flex flex-col  justify-center items-center">
-            <div className={`flex flex-col justify-evenly items-center w-full h-[100vh] bg-black`}>
-                <div className="flex flex-row justify-evenly items-center w-full  ">
-                <div className=" text-[70px] max-w-[50%] break-words font-bold text-gray-300  text-left px-[5%]">
+            <div className={`flex flex-col justify-center items-center w-full h-[100vh] bg-black`}>
+                <div className="flex md:flex-row max-md:flex-col justify-evenly items-center w-full  ">
+
+                 <JoinRoom handleJoinRoom={handleJoinRoom}/>
+
+                 <div className=" md:text-[70px] max-md:text-[35px] md:max-w-[50%] max-md:w-full break-words font-bold text-gray-300  text-center px-[5%]">
                     Chat with your friends with complete privacy 
                 </div>
-                <div className="flex flex-col h-full max-w-[50%] items-center justify-center px-[5%] ">
-                    <JoinRoom/>
-                </div>
+
+                <CreateRoom handleRoomCreate={handleRoomCreate}/>
+                
             </div>
-            <button className="text-white my-4 px-4 py-2 w-[20%] outline-none  bg-gray-900 hover:bg-gray-100 shadow-lg delay-75 transition-all hover:text-gray-900 rounded-lg font-semibold ">Create Room</button></div>
+            
+           </div>
+
+           {error && <span className="text-red-500">{error}</span>}
+
+            
         </div>
     )
 }
