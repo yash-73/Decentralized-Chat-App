@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { SocketContext } from "../provider/Socket";
 import JoinRoom from "../components/JoinRoom";
 import CreateRoom from "../components/CreateRoom";
+import {useDispatch} from 'react-redux'
+import {createRoom} from '../store/roomSlice'
 
 function Home() {
 
@@ -11,22 +13,26 @@ function Home() {
     const [error, setError] = useState("")
     const navigate = useNavigate();
     const socket = useContext(SocketContext);
+    const dispatch = useDispatch()
 
     
 
     const handleRoomCreate =async (username, roomNum, roomPassword)=>{
         socket.emit('create-room', {roomNum, roomPassword});
         handleJoinRoom(username, roomNum, roomPassword)
+
     }
     const handleJoinRoom = useCallback((username, roomNum , roomPassword)=>{
         console.log("Sending join room request now from", username, "to room", roomNum)
         socket.emit('join-req', {from: username,  room: roomNum , roomPass: roomPassword})
     },[socket])
 
-    const handleJoiningRoom = useCallback(({room})=>{
-            console.log("Joining room", room);
-            navigate(`/room/${room}`)
-    },[navigate])
+    const handleJoiningRoom = useCallback((data)=>{
+            console.log("Joining room", data.roomNum);
+            console.log(data)
+            dispatch(createRoom({roomData: data}))
+            navigate(`/room/${data.roomNum}`)
+    },[navigate, dispatch])
 
 
     useEffect(() => {

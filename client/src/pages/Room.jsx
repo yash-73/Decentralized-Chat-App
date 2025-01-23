@@ -9,6 +9,7 @@ import ChatBox from "../components/ChatBox";
 import "./Room.css";
 import FileBox from "../components/FileBox";
 import {encode, decode} from 'base64-arraybuffer'
+import { useSelector } from "react-redux";
 function Room() {
   const CHUNK_SIZE = 16 * 1024;
 
@@ -34,6 +35,8 @@ function Room() {
 
   const dataChannel = useRef();
   const fileChannel = useRef();
+
+  const roomData = useSelector((state)=> state.room.roomData);
 
   const handleIncomingMessage = useCallback((e) => {
     console.log("Message received at: ", Date.now());
@@ -113,6 +116,7 @@ function Room() {
 const assembleAndDownloadFile =useCallback( (receivingFile) => {
 
   if(fileDownloaded) return;
+  else
   try {
       // Verify all chunks are present
       const missingChunks = receivingFile.chunks.findIndex(chunk => !chunk);
@@ -199,6 +203,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
           // trigger the file assembly
           if (isComplete && prev.receivedEndSignal) {
             setTimeout(() => assembleAndDownloadFile(prev), 100);
+            setFileDownloaded(true)
           }
 
           return {
@@ -215,6 +220,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
           // If we already have all chunks, assemble the file
           if (prev.isComplete) {
             setTimeout(() => assembleAndDownloadFile(prev), 100);
+            setFileDownloaded(true)
             return prev;
           }
           // Otherwise, mark that we received the end signal and wait
@@ -228,7 +234,6 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
     },
     [sendFile, CHUNK_SIZE,assembleAndDownloadFile]
 );
-
 
 
   const handleSendFileButton = (e) => {
@@ -491,6 +496,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
     endCall,
   ]);
 
+
   return (
     <div className="flex justify-center flex-row px-4 items-center bg-black text-white min-h-[100vh] ">
 
@@ -504,6 +510,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
         sendDownloadRequest={sendDownloadRequest}
         sendStatus={sendStatus}
         downloadStatus={downloadStatus}
+        remoteEmail={remoteEmail}
       />
 
       <div className="flex flex-col my-8 w-[50%] min-w-[300px] border-2 rounded-2xl border-gray-400 mx-4">
@@ -544,7 +551,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
               myStream={myStream}
               remoteStream={remoteStream}
               remoteEmail={remoteEmail}
-              className="flex lg:flex-row  flex-col justify-evenly  max-lg:items-center lg:items-end border-gray-400 border-[1px]"
+              className="flex lg:flex-row py-8  flex-col justify-evenly  max-lg:items-center lg:items-end border-gray-400 border-[1px]"
             />
 
             <VideoCallButtons
@@ -556,7 +563,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
         )}
 
         {!inCall && (
-          <div>
+          <div className="">
             <ChatBox
               messages={messages}
               text={text}
@@ -570,7 +577,10 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
         )}
 
       </div>
-      <div className="w-[25%]"></div>
+      <div className="w-[25%] border-2 border-gray-400 flex flex-col items-center ">
+         {roomData &&  <div className="mx-4">RoomId: {roomData.roomNum}</div>}
+          {roomData && <div className="mx-4">Room Password: {roomData.roomPass}</div>}
+      </div>
     </div>
   );
 }

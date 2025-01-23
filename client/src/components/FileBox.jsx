@@ -12,6 +12,7 @@ function FileBox({
   sendDownloadRequest,
   sendStatus,
   downloadStatus,
+  remoteEmail
 }) {
   const displayName = (name) => {
     if (name.length > 16) {
@@ -35,7 +36,7 @@ function FileBox({
 
   return (
     <div
-      className={`${className} flex flex-col items-center justify-center  bg-gray-900`}
+      className={`${className} flex flex-col items-center justify-center  bg-black`}
     > 
       {fileName && (
         <div className="w-full flex flex-col  p-4 top-0 border-2 border-gray-400 left-0 backdrop-blur-md z-10 justify-evenly items-center">
@@ -61,11 +62,15 @@ function FileBox({
       {receivingFile && (
         <div className="w-full flex flex-row p-4 top-0 border-2 border-gray-400 left-0 backdrop-blur-md z-10 justify-evenly items-center">
           <div className="flex flex-col items-center">
+          <p className="self-center">Sent from {remoteEmail}</p>
+          
             <div className="border-2 border-gray-400 flex flex-row justify-center items-center p-4 m-4">
+            
               <MdOutlineAttachFile className="text-4xl text-gray-300" />
             </div>
             <p>{displayName(receivingFile.name.toString())}</p>
             <p>{displaySize(receivingFile.size)}</p>
+            
             {fileProgress > 0 && <progress value={fileProgress} max="100" />}
           </div>
 

@@ -16,7 +16,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
       {/* Message History */}
       <div
         id="message-history"
-        className="flex flex-col justify-end w-full min-h-[400px] overflow-scroll"
+        className="flex flex-col justify-end w-full h-[400px] overflow-y-scroll"
       >
         {messages.map((message, index) => (
           <Messages
@@ -42,6 +42,15 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
           autoComplete="off"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault(); // Prevent the default behavior of adding a newline
+              sendMessage(e); // Trigger the sendMessage function
+            } else if (e.key === "Enter" && e.shiftKey) {
+              // Allow Shift + Enter to insert a new line
+              setText((prev) => prev + "\n");
+            }
+          }}
           className="w-full my-4 px-2 h-[100px] text-start overflow-y-auto rounded resize-none bg-[#111111]"
         ></textarea>
 

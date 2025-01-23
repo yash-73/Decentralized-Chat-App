@@ -59,7 +59,7 @@ function JoinRoom({className, handleJoinRoom}) {
 
                     <div className='flex flex-col my-2 text-gray-300'>
                     <label className='text-14px font-semibold' htmlFor="joinRoomPassword">Room Password</label>
-                    <input type="text"
+                    <input type="password"
                     className='bg-transparent border-[1px] focus:border-white   pl-2 py-1 border-gray-600 outline-none' 
                       id='joinRoomPassword'
                     autoComplete="off"

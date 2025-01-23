@@ -32,7 +32,7 @@ io.on('connection', (socket)=>{
                 console.log(from , " is joining the room ", room)
                 socket.join(room);
                 io.to(room).emit('user-joined', {email: from, socketId: socket.id})
-                io.to(socket.id).emit('joining-room', {room})
+                io.to(socket.id).emit('joining-room', {roomNum: room , roomPass})
             }
             else{
                 io.to(socket.id).emit('wrong-password');
