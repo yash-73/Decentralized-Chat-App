@@ -7,7 +7,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
   const bottomRef = useRef();
 
   useEffect(() => {
-    // Scroll to the bottom whenever messages change
+    // Ensure the scroll-to-bottom functionality works
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -16,7 +16,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
       {/* Message History */}
       <div
         id="message-history"
-        className="flex flex-col justify-end w-full h-[400px] overflow-y-scroll"
+        className="flex flex-col w-full h-[400px] overflow-y-scroll scroll-smooth bg-[#111111] p-2"
       >
         {messages.map((message, index) => (
           <Messages
@@ -27,8 +27,6 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
         ))}
         <div ref={bottomRef}></div>
       </div>
-
-      {/* File Preview */}
 
       {/* Input Section */}
       <form
@@ -51,7 +49,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
               setText((prev) => prev + "\n");
             }
           }}
-          className="w-full my-4 px-2 h-[100px] text-start overflow-y-auto rounded resize-none bg-[#111111]"
+          className="w-full my-4 px-2 h-[100px] text-start overflow-y-auto rounded resize-none bg-[#111111] text-white"
         ></textarea>
 
         <div className="flex flex-row justify-between rounded-xl">
@@ -86,7 +84,6 @@ ChatBox.propTypes = {
   setText: PropTypes.func.isRequired,
   sendMessage: PropTypes.func.isRequired,
   handleFileChange: PropTypes.func.isRequired,
-  fileProgress: PropTypes.number,
 };
 
 export default ChatBox;

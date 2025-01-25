@@ -36,10 +36,10 @@ function CreateRoom({className, handleRoomCreate}) {
                 onSubmit={handleSubmit}
                 >
 
-                    <div className='my-4 text-[18px] font-bold text-gray-300'>Create Room</div>
+                    <div className='my-4 text-[18px] font-bold  text-gray-300'>Create Room</div>
 
 
-                    <div className='flex flex-col my-2 text-gray-300'>
+                    <div className='flex flex-col my-2 text-gray-300 w-full'>
                     <label className='text-[14px] font-semibold' htmlFor="username">Username</label>
                     <input type="text"
                     className='bg-transparent border-[1px] focus:border-white text-gray-300  pl-2 py-1 border-gray-800 outline-none' 
@@ -49,7 +49,7 @@ function CreateRoom({className, handleRoomCreate}) {
                       value={username}
                       onChange={(e)=>{setUsername(e.target.value)}}/>
                     </div>
-                    <div className='flex flex-col my-2 w-full text-gray-300'>
+                    <div className='flex flex-col my-2 w-full text-gray-300 w-full'>
                     <label className='text-[14px] font-semibold' htmlFor="roomNumber">Room Number</label>
                     <div
                     className='bg-transparent border-[1px] focus:border-white text-gray-300  pl-2 py-1 border-gray-800 outline-none cursor-text'  
@@ -59,7 +59,7 @@ function CreateRoom({className, handleRoomCreate}) {
                       > {roomNum}</div>
                     </div>
 
-                    <div className='flex flex-col my-2 text-gray-300'>
+                    <div className='flex flex-col my-2 text-gray-300 w-full'>
                     <label className='text-14px font-semibold' htmlFor="roomPassword">Room Password</label>
                     <input type="password"
                     className='bg-transparent border-[1px] focus:border-white   pl-2 py-1 border-gray-600 outline-none' 

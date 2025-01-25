@@ -41,9 +41,9 @@ function VideoCallButtons({ myStream, remoteSocketId, endCall, className }) {
     };
 
     return (
-        <div className={`w-full flex flex-row justify-evenly my-4 ${className}`}>
+        <div className={`w-full flex flex-row justify-evenly h-[15vh] items-center ${className}`}>
             <button
-                className="rounded-full p-3 m-2 flex flex-row justify-evenly hover:bg-gray-800 transition-all delay-50"
+                className="rounded-full p-3 m-2 flex flex-row  justify-evenly hover:bg-gray-800 transition-all delay-50"
                 onClick={toggleAudio}
             >
                 {isAudioEnabled ? (

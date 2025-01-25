@@ -1,0 +1,211 @@
+@keyframes slideFromLeft {
+    0% {
+        
+        transform: translate(382px , 382px) rotate(180deg);
+        opacity: 0;
+    }
+    50%, 
+    100%{
+      
+        transform: translate(0px , 0px) rotate(0deg);
+
+        opacity: 1;
+    }
+
+ 
+    
+}
+
+@keyframes slideFromRight {
+    0% {
+        transform: translate(-382px , 382px) rotate(180deg);
+        opacity: 0;
+    }
+
+    50%,100%{
+        
+        transform: translate(0px , 0px) rotate(0deg);
+        opacity: 1;
+    }
+
+ 
+
+    
+}
+
+@keyframes slideFromTop{
+    0% {
+        transform: translateY(-550px) rotate(180deg);
+        opacity: 0;
+    }
+    50%{
+        transform: translateY(0px) rotate(0deg);
+        opacity: 1;
+    }
+    100%{
+        transform: translateY(0px) rotate(0deg);
+        opacity: 1;
+    }
+
+}
+
+@keyframes scrollToAppear{
+    from{
+        opacity: 0;
+        transform: translateX(-300px);
+    }
+    to{
+        transform: translateX(0px);
+        opacity: 1;
+    }
+}
+
+
+
+.slideFromLeft{
+    animation-name: slideFromLeft;
+    animation-duration: 1000ms;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+
+}
+
+
+
+.slideFromRight{
+    animation-name: slideFromRight;
+    animation-duration: 1000ms;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+}
+
+.slideFromTop{
+    animation-name: slideFromTop;
+    animation-duration: 1000ms;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+}
+
+.scrollToAppear{
+        animation-name: scrollToAppear ;
+       animation-timeline: view();
+       animation-range: entry 80% contain 40%;
+       animation-fill-mode:both;
+}
+
+.hider{
+    opacity: 0;
+  
+    transform: translateX(-250px);
+    filter: blur(10px);
+    transition: all ;
+    transition-delay: 0ms;
+}
+
+.show{
+    opacity: 1;
+    transform: translateX(0px);
+    transition: all ;
+    transition-duration: 300ms;
+    filter: blur(0px);
+}
+
+.hider:nth-child(1){
+    transition-delay: 200ms;
+    
+}
+.hider:nth-child(2){
+    transition-delay: 300ms;
+}
+.hider:nth-child(3){
+    transition-delay: 400ms;
+}
+
+
+
+@keyframes vanish {
+    0%{
+        opacity: 0;
+    }
+     100%{
+        opacity: 1;
+    }  
+}
+
+.one{
+    opacity: 0;
+    transform: translate(0px , 100px) rotate(-180deg);
+    transition: all ease-in-out 1000ms;
+    transform-origin: 0px;
+}
+
+.two{
+    opacity: 0;
+    transform: translate(0px , -100px) rotate(180deg);
+    transform-origin: 0px;
+    transition: all ease-in-out 1000ms;
+}
+
+.three{
+    opacity: 0;
+    transform: translate(0px , -100px) rotate(-180deg);
+    transform-origin: 0px;
+    transition: all ease-in-out 1000ms;
+}
+
+.rotate_animation.one , .rotate_animation.two , .rotate_animation.three{
+    opacity: 1;
+    transform: translate(0px, 0px) rotate(0deg);
+    transform-origin: 0px;
+    transition: all ease-in-out 2000ms;
+}
+
+.rotate_animation.vanish{
+    opacity: 1;
+    transition: all ease-in-out 2000ms;
+
+}
+.vanish{
+    opacity: 0;
+    transition: all ease-in-out 1000ms;
+    
+}
+
+.feat_main{
+        transform: translateX(-400px); 
+        z-index: 50;
+        opacity: 0;
+        filter: blur(10px);
+        
+
+}
+
+.slideLeftToRight{
+    transform: translateX(0px);
+    opacity: 1;
+    filter: blur(0px);
+    transition: all ease-in-out 400ms;
+}
+
+
+.feat_main:nth-child(1){
+    transition-delay: 100ms;
+}
+.feat_main:nth-child(2){
+    transition-delay: 200ms;
+}
+.feat_main:nth-child(3){
+    transition-delay: 300ms;
+}
+.feat_main:nth-child(4){
+    transition-delay: 400ms;
+}
+.feat_main:nth-child(5){
+    transition-delay: 500ms;
+}
+.feat_main:nth-child(6){
+    transition-delay: 600ms;
+}
+
+
+

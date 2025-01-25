@@ -14,6 +14,9 @@ const rooms = new Map();
 app.use(bodyParser.json())
 
 io.on('connection', (socket)=>{
+    try{
+
+    
     console.log("New connection: ", socket.id);
 
     socket.on('create-room' , ({roomNum, roomPassword})=>{
@@ -83,6 +86,10 @@ io.on('connection', (socket)=>{
     socket.on('disconnect', () => {
         console.log(`Disconnected: ${socket.id}`);
     });
+    }
+    catch(error){
+        console.log("Error: ", error.message)
+    }
 })
 
 // io.off()

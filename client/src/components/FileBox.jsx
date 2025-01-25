@@ -102,6 +102,7 @@ FileBox.propTypes = {
   sendDownloadRequest: PropTypes.func.isRequired,
   sendStatus: PropTypes.string,
   downloadStatus: PropTypes.string,
+  remoteEmail: PropTypes.string
 };
 
 export default FileBox;

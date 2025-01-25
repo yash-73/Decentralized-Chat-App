@@ -161,78 +161,62 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
   }
 },[fileDownloaded]);
 
-  // Receiver code
-  const handleIncomingFile = useCallback(
-    async (event) => {
-      const fileData = JSON.parse(event.data);
+const handleIncomingFile = useCallback(
+  async (event) => {
+    const fileData = JSON.parse(event.data);
 
-      if (fileData.type == "file-start") {
-        setFileDownloaded(false);
-        setReceivingFile({
-          name: fileData.fileName,
-          size: fileData.fileSize,
-          type: fileData.fileType,
-          chunks: new Array(Math.ceil(fileData.fileSize / CHUNK_SIZE)),
-          receivedChunks: 0,
-          totalChunks: Math.ceil(fileData.fileSize / CHUNK_SIZE), // Add totalChunks to state
-          isComplete: false // Add flag to track completion
-        });
-      } else if (fileData.type == "start-download") {
-        console.log("Sending file now");
-        setSendStatus("Sending...");
-        await sendFile();
-      } else if (fileData.type == "file-chunk") {
-        setReceivingFile((prev) => {
-          if (!prev) return prev;
+    if (fileData.type === "file-start") {
+      setFileDownloaded(false);
+      setReceivingFile({
+        name: fileData.fileName,
+        size: fileData.fileSize,
+        type: fileData.fileType,
+        chunks: new Array(Math.ceil(fileData.fileSize / CHUNK_SIZE)),
+        receivedChunks: 0,
+        totalChunks: Math.ceil(fileData.fileSize / CHUNK_SIZE),
+        isComplete: false
+      });
+    } 
+    else if (fileData.type == "start-download") {
+      console.log("Sending file now");
+      setSendStatus("Sending...");
+      await sendFile();
+    }
+    else if (fileData.type === "file-chunk") {
+      setReceivingFile((prev) => {
+        if (!prev) return prev;
 
-          // Convert chunk data
-          const chunkArray = new Uint8Array(decode(fileData.chunk));
-          console.log("Received chunk", fileData.chunkIndex, chunkArray.length);
+        const chunkArray = new Uint8Array(decode(fileData.chunk));
+        const newChunks = [...prev.chunks];
+        newChunks[fileData.chunkIndex] = chunkArray;
 
-          // Create new chunks array to avoid mutation
-          const newChunks = [...prev.chunks];
-          newChunks[fileData.chunkIndex] = chunkArray;
-          
-          const newReceivedChunks = prev.receivedChunks + 1;
-          setFileProgress((newReceivedChunks / fileData.totalChunks) * 100);
+        const newReceivedChunks = prev.receivedChunks + 1;
+        const isComplete = newReceivedChunks === prev.totalChunks;
+        setFileProgress((newReceivedChunks / prev.totalChunks) * 100);
 
-          // Check if this was the last chunk we were waiting for
-          const isComplete = newReceivedChunks === prev.totalChunks;
-          
-          // If this is the last chunk and we already got the file-end message,
-          // trigger the file assembly
-          if (isComplete && prev.receivedEndSignal) {
-            setTimeout(() => assembleAndDownloadFile(prev), 100);
-            setFileDownloaded(true)
-          }
+        return {
+          ...prev,
+          chunks: newChunks,
+          receivedChunks: newReceivedChunks,
+          isComplete
+        };
+      });
+    }
+    else if (fileData.type === "file-end") {
+      setReceivingFile((prev) => {
+        if (!prev) return prev;
 
-          return {
-            ...prev,
-            chunks: newChunks,
-            receivedChunks: newReceivedChunks,
-            isComplete
-          };
-        });
-      } else if (fileData.type === "file-end") {
-        setReceivingFile((prev) => {
-          if (!prev) return prev;
+        if (prev.isComplete) {
+          assembleAndDownloadFile(prev);
+          setFileDownloaded(true);
+          return null; // Reset receiving file state
+        }
 
-          // If we already have all chunks, assemble the file
-          if (prev.isComplete) {
-            setTimeout(() => assembleAndDownloadFile(prev), 100);
-            setFileDownloaded(true)
-            return prev;
-          }
-          // Otherwise, mark that we received the end signal and wait
-          // for the remaining chunks
-          return {
-            ...prev,
-            receivedEndSignal: true
-          };
-        });
-      }
-    },
-    [sendFile, CHUNK_SIZE,assembleAndDownloadFile]
+        return prev;
+      });
+    }
+  },
+  [sendFile, CHUNK_SIZE, assembleAndDownloadFile]
 );
 
 
@@ -498,10 +482,10 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
 
 
   return (
-    <div className="flex justify-center flex-row px-4 items-center bg-black text-white min-h-[100vh] ">
-
+    <div className="flex w-full justify-center flex-row px-4 items-center bg-black text-white h-[100vh] ">
+      <div className="w-[25%]">{!inCall &&
       <FileBox
-        className="w-[25%]"
+        className="w-full"
         fileName={fileName}
         files={files}
         handleSendFileButton={handleSendFileButton}
@@ -511,16 +495,20 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
         sendStatus={sendStatus}
         downloadStatus={downloadStatus}
         remoteEmail={remoteEmail}
-      />
+      />}</div>
 
-      <div className="flex flex-col my-8 w-[50%] min-w-[300px] border-2 rounded-2xl border-gray-400 mx-4">
-        <div className="flex flex-row justify-between items-center px-4 py-2">
+      <div className="flex flex-col my-8 w-[50%] min-w-[300px] h-full  justify-self-center   border-2 rounded-2xl border-gray-400 mx-4">
+      <div className="flex flex-row items-center justify-between p-4 border-b-2 border-gray-400 text-center ">
+         {roomData &&  <div className="mx-4">RoomId: {roomData.roomNum}</div>}
+          {roomData && <div className="mx-4">Room Password: {roomData.roomPass}</div>}
+          </div>
+        {!incomingCall && !inCall && <div className="flex flex-row justify-between items-center px-4 py-2">
           <div>
             {remoteSocketId ? `Connected to ${remoteEmail}` : `Empty Room`}
           </div>
           <div>
-
-            {remoteSocketId && (
+            
+            { remoteSocketId &&  (
               <button
                 onClick={callUser}
                 disabled={remoteStream}
@@ -531,10 +519,10 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
             )}
 
           </div>
-        </div>
+        </div>}
 
         {incomingCall && (
-          <div className="flex flex-row justify-between  bg-gray-400 px-4 py-2 animate-pulse">
+          <div className="flex flex-row justify-between  bg-gray-400 px-4 py-2 animate-pulse shadow-md">
             <p>Call from {remoteEmail}</p>
             <button
               className="bg-blue-500 px-2 py-1 rounded-md hover:bg-blue-600 text-white shadow-md"
@@ -563,7 +551,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
         )}
 
         {!inCall && (
-          <div className="">
+          <div >
             <ChatBox
               messages={messages}
               text={text}
@@ -577,10 +565,11 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
         )}
 
       </div>
-      <div className="w-[25%] border-2 border-gray-400 flex flex-col items-center ">
-         {roomData &&  <div className="mx-4">RoomId: {roomData.roomNum}</div>}
-          {roomData && <div className="mx-4">Room Password: {roomData.roomPass}</div>}
+
+      <div className=" flex flex-col items-center justify-start w-[25%] h-full">
+        
       </div>
+
     </div>
   );
 }
