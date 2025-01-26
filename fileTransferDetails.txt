@@ -1,11 +1,11 @@
-file size on system: 28,633 KB
+file size on system: 29,319 KB
 file size on browser: 29,319 KB
-file size after download: 28,624 KB
+file size after download: 29,319 KB
 
 time taken to download file: 23.294 seconds
 
 Download speed: 9.83 Mb/s
 Average download speed: 10.15 Mb /s
 Average upload speed: 10.9 Mb/s
-Efficiency: 96.84% 
+Bandwidth Efficiency: 96.84% 
 

@@ -5,7 +5,7 @@ function JoinRoom({className, handleJoinRoom}) {
     const [username, setUsername] = useState("")
     const [roomNum, setRoomNum] = useState("");
     const [roomPassword, setRoomPassword] = useState("");
-    const [error, setError] = useState("")
+    const [error, setError] = useState("");
 
     const handleSubmit = (e)=>{
       e.preventDefault();
@@ -30,9 +30,9 @@ function JoinRoom({className, handleJoinRoom}) {
     return (
        
                 <form 
-                className={`flex flex-col backdrop-blur-lg  items-center py-2 px-4 ${className} z-10 rounded-2xl border-[1px] border-gray-500 shadow-lg`}
-                action="submit" 
-                onSubmit={handleSubmit}
+                  className={`flex flex-col backdrop-blur-lg  items-center py-2 px-4 ${className} z-10 rounded-2xl border-[1px] border-gray-500 shadow-lg`}
+                  action="submit" 
+                  onSubmit={handleSubmit}
                 >
 
                     <div className='my-4 text-[18px] font-bold text-gray-300'>Join Room</div>
@@ -68,17 +68,19 @@ function JoinRoom({className, handleJoinRoom}) {
                       onChange={(e)=>{setRoomPassword(e.target.value)}}/>
                     </div>
 
+                    {error && <span className='text-red-500 text-center w-full'>{error}</span>}
+
                     <button className='my-4 py-1 w-full hover:bg-gray-300 shadow-md text-white hover:text-black font-semibold bg-gray-800  transition-all delay-100 px-4  border-gray-800 rounded-lg'>
                         Join
                     </button>
-
                 </form>
         
     )
 }
 
 JoinRoom.propTypes = {
-    className : PropTypes.string
+    className : PropTypes.string,
+    handleJoinRoom: PropTypes.func
 }
 
 export default JoinRoom

@@ -5,12 +5,11 @@ import JoinRoom from "../components/JoinRoom";
 import CreateRoom from "../components/CreateRoom";
 import { useDispatch } from "react-redux";
 import { createRoom } from "../store/roomSlice";
-import NavBar from "../components/NavBar";
-import { MdOutlineLaptopWindows } from "react-icons/md";
 import { BsFillChatTextFill } from "react-icons/bs";
 import { FcVideoCall } from "react-icons/fc";
 import { RiFolderSharedFill } from "react-icons/ri";
 import { RiP2pFill } from "react-icons/ri";
+import { useSelector } from "react-redux";
 
 import "./Home.css";
 
@@ -20,6 +19,8 @@ function Home() {
   const create_room_ref = useRef(null);
   const join_room_ref = useRef(null);
   const features_parent = useRef(null)
+
+  const [myRoomData, setMyRoomData] = useState(null);
 
   const navElements = [
     {
@@ -46,6 +47,16 @@ function Home() {
   const dispatch = useDispatch();
 
   const aniref = useRef(null);
+  const roomData = useSelector((state)=> state.room.roomData);
+  
+
+  useEffect(()=>{
+    
+    if(roomData){
+      setMyRoomData(roomData);
+    }
+  },[roomData])
+
 
   useEffect(()=>{
     if(features_parent.current){
@@ -159,6 +170,7 @@ function Home() {
 
   return (
         <div className="flex bg-black text-white">
+
             <div ref={home_ref}></div>
             <div className="w-[250px] h-screen sticky top-0 left-0 z-10 overflow-y-auto">
                 <nav
@@ -180,6 +192,9 @@ function Home() {
                             {item.name}
                         </button>))
                     }
+
+                    {myRoomData ? <button className="text-left px-4 py-1 rounded-x w-full rounded my-2 font-medium text-lg  hover:bg-gray-400/45 hover:text-white  transition-all duration-100 " 
+                  onClick={()=>{ navigate(`/room/${myRoomData.roomNum}`)}}>My Room</button> : null}
                 </nav>
             </div>
 
@@ -239,6 +254,7 @@ function Home() {
                     Start communicating with friends
                 </h3>
                 <JoinRoom handleJoinRoom={handleJoinRoom} className={"w-[300px]"} />
+                {error && <span className="text-red-500 w-full text-center">{error}</span>}
             </div>
 
             <div

@@ -10,6 +10,7 @@ import "./Room.css";
 import FileBox from "../components/FileBox";
 import {encode, decode} from 'base64-arraybuffer'
 import { useSelector } from "react-redux";
+
 function Room() {
   const CHUNK_SIZE = 16 * 1024;
 
@@ -480,9 +481,9 @@ const handleIncomingFile = useCallback(
     endCall,
   ]);
 
-
   return (
     <div className="flex w-full justify-center flex-row px-4 items-center bg-black text-white h-[100vh] ">
+    <a href="/" target="_blank" className="absolute top-0 text-2xl font-bold text-teal-400 left-0 mx-2 hover:cursor-pointer font-sans  my-8 px-4 " >whisperNet</a>
       <div className="w-[25%]">{!inCall &&
       <FileBox
         className="w-full"
