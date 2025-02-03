@@ -76,14 +76,14 @@ function Room() {
             fileChannel.current.bufferedAmountLowThreshold
           ) {
             fileChannel.current.onbufferedamountlow = () => {
-              console.log("Sending chunk", chunkIndex, chunk.byteLength);
+             
               fileChannel.current.send(chunkData);
               setFileProgress((chunkIndex+1/totalChunks) * 100)
               fileChannel.current.onbufferedamountlow = null;
               proceedToNextChunk();
             };
           } else {
-            console.log("Sending chunk", chunkIndex, chunk.byteLength);
+            
             fileChannel.current.send(chunkData);
             proceedToNextChunk();
           }
@@ -154,6 +154,7 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
       setFileProgress(0);
       setDownloadStatus("Send");
       console.log("Original size:", receivingFile.size, "Assembled size:", totalSize);
+      console.log("Download complete ", Date.now())
       setFileDownloaded(true);
   } catch (error) {
       console.error("Error assembling file:", error);
@@ -178,7 +179,7 @@ const handleIncomingFile = useCallback(
       });
     } 
     else if (fileData.type == "start-download") {
-      console.log("Sending file now");
+      console.log("Sending file now  ",Date.now());
       setSendStatus("Sending...");
       await sendFile();
     }
