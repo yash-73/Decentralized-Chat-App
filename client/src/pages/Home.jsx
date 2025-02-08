@@ -141,11 +141,8 @@ function Home() {
     socket.on("room-created", () => {
       console.log("Room created ");
     });
-    socket.on("wrong-password", () => {
-      setError("Wrong password");
-    });
-    socket.on("no-room-found", () => {
-      setError("No Room found");
+    socket.on("error", ({err}) => {
+      setError(err);
     });
     socket.on("connect", () => console.log("Socket connected:", socket.id));
     socket.on("disconnect", () => console.log("Socket disconnected"));
@@ -156,8 +153,8 @@ function Home() {
       socket.off("connect");
       socket.off("disconnect");
       socket.off("joining-room");
-      socket.off("wrong-password");
-      socket.off("no-room-found");
+      socket.off("error");
+     
     };
   }, [socket, handleJoiningRoom, handleJoinRoom]);
 
@@ -187,7 +184,7 @@ function Home() {
                 </nav>
             </div>
 
-            <div className="px-8 flex-1 border-2 border-gray-500">
+            <div className="px-8 flex-1 border-l-2  border-gray-500">
                 <h2 className=" w-full text-center text-[80px] mb-8 mt-16 break-words font-bold">
                     Chat with your friends with complete privacy
                  </h2>

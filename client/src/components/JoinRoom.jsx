@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import PropTypes from 'prop-types'
 function JoinRoom({className, handleJoinRoom}) {
 
@@ -26,6 +26,12 @@ function JoinRoom({className, handleJoinRoom}) {
           roomNum, roomPassword
       });
     }
+
+    useEffect(()=>{
+      if(error.length != 0){
+        alert(error)
+      }
+    },[error])
 
     return (
        
@@ -78,7 +84,8 @@ function JoinRoom({className, handleJoinRoom}) {
 }
 
 JoinRoom.propTypes = {
-    className : PropTypes.string
+    className : PropTypes.string,
+    handleJoinRoom : PropTypes.func.isRequired,
 }
 
 export default JoinRoom

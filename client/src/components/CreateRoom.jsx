@@ -1,5 +1,6 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import PropTypes from 'prop-types'
+import { MdOutlineAutorenew } from "react-icons/md";
 function CreateRoom({className, handleRoomCreate}) {
 
     const [username, setUsername] = useState("")
@@ -28,6 +29,10 @@ function CreateRoom({className, handleRoomCreate}) {
         });
     }
 
+    useEffect(()=>{
+        if(error.length > 0) alert(error)
+    },[error])
+
     return (
        
                 <form 
@@ -49,14 +54,16 @@ function CreateRoom({className, handleRoomCreate}) {
                       value={username}
                       onChange={(e)=>{setUsername(e.target.value)}}/>
                     </div>
-                    <div className='flex flex-col my-2 w-full text-gray-300 w-full'>
+                    <div className='flex flex-col my-2 w-full text-gray-300'>
                     <label className='text-[14px] font-semibold' htmlFor="roomNumber">Room Number</label>
                     <div
-                    className='bg-transparent border-[1px] focus:border-white text-gray-300  pl-2 py-1 border-gray-800 outline-none cursor-text'  
+                    className='bg-transparent flex flex-row justify-between relative border-[1px] focus:border-white text-gray-300  pl-2 py-1 border-gray-800 outline-none cursor-text'  
                       id='roomNumber'
 
                       
-                      > {roomNum}</div>
+                      > {roomNum}   <MdOutlineAutorenew  
+                      onClick={(e)=>{e.preventDefault(); setRoomNum(Math.floor(100000 + Math.random() * 900000).toString())}}
+                      className='cursor-pointer text-[25px] '/></div>
                     </div>
 
                     <div className='flex flex-col my-2 text-gray-300 w-full'>
@@ -75,13 +82,16 @@ function CreateRoom({className, handleRoomCreate}) {
                         Create Room
                     </button>
 
+                    
+
                 </form>
         
     )
 }
 
 CreateRoom.propTypes = {
-    className : PropTypes.string
+    className : PropTypes.string,
+    handleRoomCreate: PropTypes.func.isRequired
 }
 
 export default CreateRoom
