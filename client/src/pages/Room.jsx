@@ -19,19 +19,20 @@ function Room() {
   const [remoteEmail, setRemoteEmail] = useState();
   const [myStream, setMyStream] = useState();
   const [remoteStream, setRemoteStream] = useState();
+
   const [incomingCall, setIncomingCall] = useState(false);
   const [inCall, setInCall] = useState(false);
   const [negotiated, setNegotiated] = useState(false);
+
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const [fileName, setFileName] = useState("");
   const [files, setFiles] = useState();
+
   const [fileProgress, setFileProgress] = useState(0);
   const [receivingFile, setReceivingFile] = useState(null);
-
   const [sendStatus, setSendStatus] = useState("Send");
   const [downloadStatus, setDownloadStatus] = useState("Download");
-  const [fileDownloaded, setFileDownloaded] = useState(false);
+  const [link, setLink] = useState(null)
 
   const dataChannel = useRef();
   const fileChannel = useRef();
@@ -97,9 +98,8 @@ function Room() {
         if (chunkIndex < totalChunks) {
           readAndSendChunk();
         } else {
-          setSendStatus("Sent")
+          setSendStatus("Send")
           setFiles(null);
-          setFileName(null)
           setFileProgress(0);
           fileChannel.current.send(JSON.stringify({ type: "file-end" }));
         }
@@ -109,19 +109,19 @@ function Room() {
       readAndSendChunk();
     } catch (error) {
       console.error("Error sending file:", error);
+
     }
   }, [files, CHUNK_SIZE]);
 
   // Separate function to handle file assembly and download
-const assembleAndDownloadFile =useCallback( (receivingFile) => {
+const assembleAndDownloadFile =useCallback(async (receivingFile) => {
 
-  if(fileDownloaded) return;
-  else
   try {
       // Verify all chunks are present
       const missingChunks = receivingFile.chunks.findIndex(chunk => !chunk);
       if (missingChunks !== -1) {
           throw new Error(`Missing chunk at index ${missingChunks}`);
+          
       }
 
       // Calculate total size
@@ -143,31 +143,28 @@ const assembleAndDownloadFile =useCallback( (receivingFile) => {
 
       const fileBlob = new Blob([finalArray], { type: receivingFile.type });
       const downloadUrl = URL.createObjectURL(fileBlob);
-
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = receivingFile.name;
-      link.click();
-
-      URL.revokeObjectURL(downloadUrl);
-      setReceivingFile(null);
-      setFileProgress(0);
-      setDownloadStatus("Send");
+      const link1 = document.createElement("a");
+      link1.href = downloadUrl;
+      link1.download = receivingFile.name;
+      setLink(link1)
       console.log("Original size:", receivingFile.size, "Assembled size:", totalSize);
-      console.log("Download complete ", Date.now())
-      setFileDownloaded(true);
+
   } catch (error) {
       console.error("Error assembling file:", error);
       alert("Error assembling file: " + error.message);
+      setReceivingFile(null);
+      setFileProgress(0);
+      setDownloadStatus("Download");
+
   }
-},[fileDownloaded]);
+},[]);
 
 const handleIncomingFile = useCallback(
   async (event) => {
     const fileData = JSON.parse(event.data);
 
     if (fileData.type === "file-start") {
-      setFileDownloaded(false);
+      
       setReceivingFile({
         name: fileData.fileName,
         size: fileData.fileSize,
@@ -209,7 +206,6 @@ const handleIncomingFile = useCallback(
 
         if (prev.isComplete) {
           assembleAndDownloadFile(prev);
-          setFileDownloaded(true);
           return null; // Reset receiving file state
         }
 
@@ -219,6 +215,16 @@ const handleIncomingFile = useCallback(
   },
   [sendFile, CHUNK_SIZE, assembleAndDownloadFile]
 );
+
+
+const downloadFile = useCallback(()=>{
+      link.click();
+      setReceivingFile(null);
+      setFileProgress(0);
+      setDownloadStatus("Download");
+      console.log("Download complete ", Date.now())
+      setLink(null);
+},[link])
 
 
   const handleSendFileButton = (e) => {
@@ -373,8 +379,7 @@ const handleIncomingFile = useCallback(
 
     if (file) {
       console.dir(file);
-      setFileName(file.name);
-    } else setFileName("");
+    }
   };
 
   const endCall = useCallback(() => {
@@ -483,11 +488,10 @@ const handleIncomingFile = useCallback(
 
 
   return (
-    <div className="flex w-full justify-center flex-row px-4 items-center bg-black text-white h-[100vh] ">
-      <div className="w-[25%]">{!inCall &&
+    <div className="flex w-full justify-center flex-row px-4 items-center bg-black text-white h-[100vh]">
+      <div className="lg:w-[25%] flex flex-col items-center relative">{!inCall &&
       <FileBox
         className="w-full"
-        fileName={fileName}
         files={files}
         handleSendFileButton={handleSendFileButton}
         receivingFile={receivingFile}
@@ -496,9 +500,14 @@ const handleIncomingFile = useCallback(
         sendStatus={sendStatus}
         downloadStatus={downloadStatus}
         remoteEmail={remoteEmail}
-      />}</div>
+      />}
+      {link && <div>
+          <button className="px-2 border-[1px] py-2 hover:bg-gray-300 duration-100 transition-all hover:text-black cursor-pointer rounded-xl  border-white" onClick={downloadFile}>Download File</button>
+         </div>}</div>
+      
 
-      <div className="flex flex-col my-8 w-[50%] min-w-[300px] h-full  justify-self-center   border-2 rounded-2xl border-gray-400 mx-4">
+      <div className="flex flex-col max-lg:w-full  md:w-[50%] min-w-[400px]  border-2 rounded-2xl border-gray-400 ">
+        
       <div className="flex flex-row items-center justify-between p-4 border-b-2 border-gray-400 text-center ">
          {roomData &&  <div className="mx-4">RoomId: {roomData.roomNum}</div>}
           {roomData && <div className="mx-4">Room Password: {roomData.roomPass}</div>}
@@ -559,7 +568,6 @@ const handleIncomingFile = useCallback(
               setText={setText}
               sendMessage={sendMessage}
               handleFileChange={handleFileChange}
-              fileName={fileName}
               sendFile={sendFile}
             />
           </div>
@@ -567,7 +575,7 @@ const handleIncomingFile = useCallback(
 
       </div>
 
-      <div className=" flex flex-col items-center justify-start w-[25%] h-full">
+      <div className=" flex flex-col items-center justify-start lg:w-[25%] h-full">
         
       </div>
 

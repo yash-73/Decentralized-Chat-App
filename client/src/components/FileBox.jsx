@@ -4,7 +4,6 @@ import PropTypes from "prop-types";
 
 function FileBox({
   className,
-  fileName,
   files,
   handleSendFileButton,
   receivingFile,
@@ -36,15 +35,15 @@ function FileBox({
 
   return (
     <div
-      className={`${className} flex flex-col items-center justify-center  bg-black`}
+      className={`${className} flex flex-col items-center justify-center px-4`}
     > 
-      {fileName && (
-        <div className="w-full flex flex-col  p-4 top-0 border-2 border-gray-400 left-0 backdrop-blur-md z-10 justify-evenly items-center">
+      {files && (
+        <div className="w-full flex flex-row  p-4 border-2 border-gray-400 left-0 backdrop-blur-md z-10 justify-evenly items-center">
           <div className="flex flex-col items-center">
             <div className="border-2 border-gray-400 flex flex-row justify-center items-center p-4 m-4">
               <MdOutlineAttachFile className="text-4xl text-gray-300" />
             </div>
-            <p>{displayName(fileName)}</p>
+            <p>{displayName(files.name)}</p>
             <p>{displaySize(files.size)}</p>
             {fileProgress > 0 && <progress value={fileProgress} max="100" />}
           </div>
@@ -52,7 +51,7 @@ function FileBox({
           <button
             onClick={handleSendFileButton}
             disabled={sendStatus != "Send"}
-            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 m-4 hover:bg-gray-300 hover:text-[#181818] transition-all delay-75"
+            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 m-4 hover:bg-gray-300 cursor-pointer hover:text-[#181818] transition-all delay-75"
           >
             {sendStatus}
           </button>
@@ -77,7 +76,7 @@ function FileBox({
           <button
             onClick={sendDownloadRequest}
             disabled={downloadStatus != "Download"}
-            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 m-4 hover:bg-gray-300 hover:text-[#181818] transition-all delay-75"
+            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 m-4 hover:bg-gray-300 cursor-pointer hover:text-[#181818] transition-all delay-75"
           >
             {downloadStatus}
           </button>
@@ -89,9 +88,9 @@ function FileBox({
 
 FileBox.propTypes = {
   className: PropTypes.string,
-  fileName: PropTypes.string,
   files: PropTypes.shape({
     size: PropTypes.number,
+    name: PropTypes.string,
   }),
   handleSendFileButton: PropTypes.func.isRequired,
   receivingFile: PropTypes.shape({

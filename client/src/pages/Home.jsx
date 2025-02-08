@@ -5,8 +5,6 @@ import JoinRoom from "../components/JoinRoom";
 import CreateRoom from "../components/CreateRoom";
 import { useDispatch } from "react-redux";
 import { createRoom } from "../store/roomSlice";
-import NavBar from "../components/NavBar";
-import { MdOutlineLaptopWindows } from "react-icons/md";
 import { BsFillChatTextFill } from "react-icons/bs";
 import { FcVideoCall } from "react-icons/fc";
 import { RiFolderSharedFill } from "react-icons/ri";
@@ -47,6 +45,11 @@ function Home() {
 
   const aniref = useRef(null);
 
+  useEffect(()=>{
+    if(error) alert(error)
+  },[error])
+
+  
   useEffect(()=>{
     if(features_parent.current){
         const observer = new IntersectionObserver((entries)=>{
@@ -106,6 +109,7 @@ function Home() {
     socket.emit("create-room", { roomNum, roomPassword });
     handleJoinRoom(username, roomNum, roomPassword);
   };
+
   const handleJoinRoom = useCallback(
     (username, roomNum, roomPassword) => {
       console.log(

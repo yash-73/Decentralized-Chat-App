@@ -11,11 +11,11 @@ function VideoCall({ myStream, remoteStream, remoteEmail, className }) {
             }}
             autoPlay
             muted
-            className="  rounded-2xl shadow-lg border-gray-300 border-2"
+            className=" rounded-2xl w-full shadow-lg border-gray-300 border-2"
           />
 
           {myStream && (
-            <div className="absolute flex flex-col items-center text-center w-[30%]  bottom-0 right-[6px] ">
+            <div className="absolute flex flex-col items-center text-center w-[30%]  bottom-0 right-0 ">
               <video
                 ref={(ref) => {
                   if (ref) ref.srcObject = myStream;
