@@ -335,9 +335,14 @@ const downloadFile = useCallback(()=>{
   );
 
   const sendStreams = useCallback(async () => {
+    const videoConstraints =  {
+      width: { ideal: 1280, min: 640, max: 1920 },  // Set preferred width
+      height: { ideal: 720, min: 480, max: 1080 }, // Set preferred height
+      frameRate: { ideal: 30, max: 60 }  // Increase frame rate for smoother video
+    }
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
-      video: true,
+      video: videoConstraints,
     });
     setMyStream(stream);
     stream.getTracks().forEach((track) => {
@@ -439,6 +444,35 @@ const downloadFile = useCallback(()=>{
     if (fileChannel.current != null)
       fileChannel.current.onmessage = handleIncomingFile;
   }, [handleIncomingFile]);
+
+  useEffect(()=>{
+    if (remoteStream != null){
+      setInterval(()=>{
+        remoteStream.getVideoTracks().forEach(track =>{
+          const settings = track.getSettings();
+          console.log(`Current resolution: ${settings.width}x${settings.height}`)
+        })
+      },2000)
+    }
+    return ()=>{
+      
+    }
+  },[remoteStream])
+
+  useEffect(()=>{
+    if (myStream != null){
+      setInterval(()=>{
+        myStream.getVideoTracks().forEach(track =>{
+          const settings = track.getSettings();
+          console.log(`My resolution: ${settings.width}x${settings.height}`)
+        })
+      },2000)
+    }
+
+    return ()=>{
+
+    }
+  },[myStream])
 
   useEffect(() => {
     socket.on("user-joined", handleNewUserJoined);

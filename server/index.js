@@ -59,10 +59,10 @@ io.on('connection', (socket)=>{
 
     socket.on('join-req',async (data)=>{
         const {from , room , roomPass} = data;
-
-        await rooms.findOne({roomNum: room})
-        .then(async (currRoom)=>{
-            if(currRoom.roomPass === roomPass){
+        try{
+            const currRoom = await rooms.findOne({roomNum: room})
+            console.log(currRoom)
+            if(currRoom.roomPass == roomPass){
                 if(currRoom.members.length <= 1){
                     await rooms.updateOne({roomNum: room}, {$push: {members: {username: from , socketId: socket.id}}})
                     .then((newRoom)=> console.log(newRoom));
@@ -75,17 +75,16 @@ io.on('connection', (socket)=>{
                 else{
                     io.to(socket.id).emit("error", {msg: "Room is full"})
                 }
-                
             }
             else{
                 io.to(socket.id).emit('error', {err: 'Wrong Password'});
             }
-        })
-        .catch((error)=>{
-                console.log("Error: ", error)
-                io.to(socket.id).emit('error', {err: 'no room found'})
-        })
-      
+        }
+        catch(error){
+            console.log("Error: ", error)
+            io.to(socket.id).emit('error', {err: 'no room found'})
+    }
+        
     })
 
     socket.on('connect-user', ({to, offer})=>{

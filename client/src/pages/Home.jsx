@@ -107,7 +107,10 @@ function Home() {
 
   const handleRoomCreate = async (username, roomNum, roomPassword) => {
     socket.emit("create-room", { roomNum, roomPassword });
-    handleJoinRoom(username, roomNum, roomPassword);
+    setTimeout(()=>{
+      handleJoinRoom(username, roomNum, roomPassword);
+    },1000)
+    
   };
 
   const handleJoinRoom = useCallback(
@@ -141,8 +144,8 @@ function Home() {
     socket.on("room-created", () => {
       console.log("Room created ");
     });
-    socket.on("error", ({err}) => {
-      setError(err);
+    socket.on("error", ({msg}) => {
+      setError(msg)
     });
     socket.on("connect", () => console.log("Socket connected:", socket.id));
     socket.on("disconnect", () => console.log("Socket disconnected"));

@@ -44,8 +44,6 @@ function VideoCall({ myStream, remoteStream, remoteEmail, className }) {
                 muted
                 className="rounded-lg shadow-lg border-gray-300 border-[2px] m-4 lg:h-[200px] max-lg:w-[50%]"
               />
-
-
             </div>
             
           )}
