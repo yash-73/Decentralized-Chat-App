@@ -8,7 +8,8 @@ import { createRoom } from "../store/roomSlice";
 import { BsFillChatTextFill } from "react-icons/bs";
 import { FcVideoCall } from "react-icons/fc";
 import { RiFolderSharedFill } from "react-icons/ri";
-import { RiP2pFill } from "react-icons/ri";
+import { IoMenu } from "react-icons/io5";
+import { RxCross2 } from "react-icons/rx";
 
 import "./Home.css";
 
@@ -39,11 +40,14 @@ function Home() {
   ];
 
   const [error, setError] = useState("");
+  const [nav, setNav] = useState(false)
   const navigate = useNavigate();
   const socket = useContext(SocketContext);
   const dispatch = useDispatch();
 
   const aniref = useRef(null);
+
+
 
   useEffect(()=>{
     if(error) alert(error)
@@ -86,30 +90,13 @@ function Home() {
 
     
   }, []);
-  useEffect(() => {
-    if (aniref.current) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          const children = entry.target.children;
-
-          if (entry.isIntersecting) {
-            for (let i = 0; i < children.length; i++) {
-              const child = children.item(i);
-              child.classList.add("show");
-            }
-          }
-        });
-      });
-
-      observer.observe(aniref.current);
-    }
-  }, []);
+ 
 
   const handleRoomCreate = async (username, roomNum, roomPassword) => {
     socket.emit("create-room", { roomNum, roomPassword });
     setTimeout(()=>{
       handleJoinRoom(username, roomNum, roomPassword);
-    },1000)
+    },500)
     
   };
 
@@ -162,11 +149,9 @@ function Home() {
   }, [socket, handleJoiningRoom, handleJoinRoom]);
 
   return (
-        <div className="flex bg-black text-white">
-            <div ref={home_ref}></div>
-            <div className="w-[250px] h-screen sticky top-0 left-0 z-10 overflow-y-auto">
-                <nav
-                    className={` flex flex-col bg-black  text-white justify-start items-start px-8 `}>
+    <div className="flex flex-row bg-black overflow-x-hidden overflow-y-scroll h-[100vh]">
+      <nav
+                    className={` max-md:hidden sticky top-0 flex flex-col bg-black  text-white justify-start items-start px-8 `}>
                     <div
                         onClick={() => {location.reload();}}
                         className="hover:cursor-pointer text-teal-400 font-sans  my-8 px-4 font-bold text-2xl">
@@ -184,102 +169,46 @@ function Home() {
                             {item.name}
                         </button>))
                     }
-                </nav>
-            </div>
+      </nav>
 
-            <div className="px-8 flex-1 border-l-2  border-gray-500">
-                <h2 className=" w-full text-center text-[80px] mb-8 mt-16 break-words font-bold">
-                    Chat with your friends with complete privacy
-                 </h2>
+      <div className="flex flex-col w-full relative overflow-x-hidden">
+        <div ref={home_ref}></div>
+        <nav className="md:hidden sticky top-0 w-full z-30 flex flex-row justify-between p-4  nav-gradient">
+        <h1 className=" text-teal-400 w-full font-bold text-2xl ">whisperNet</h1>
+        <div className="z-30"><IoMenu
+        onClick={()=>{setNav(true)}}
+        className="text-white text-3xl cursor-pointer"/></div>
+        </nav>
+        <aside className={`${nav ? 'translate-x-0' : 'translate-x-[100%]'} fixed md:hidden top-0 right-0 h-screen bg-black/55 backdrop-blur-md w-[80%] z-[30] p-4 transition-all duration-300 `}> 
 
-                <div className="w-full flex relative flex-col justify-evenly my-[150px] items-center overflow-hidden">
-                <div className="flex flex-row items-center justify-evenly w-full">
-                    <div className=" p-[30px] border-gray-900 border-4 bg-black rounded-full">
-                        <RiP2pFill className="text-[130px] text-red-500" />
-                    </div>
-                    <p className=" text-[30px] text-center break-words font-semibold w-[60%]">
-                        Establish a complete peer-to-peer network using WebRTC
-                    </p>
-                </div>
-                <div className="lpbot text-white "></div>
-            </div>
+        <div className="w-full flex flex-row justify-end"><RxCross2 
+        onClick={()=>{setNav(false)}}
+        className="text-white text-3xl cursor-pointer"/></div>
+        {navElements.map((item) => (
+                        <button onClick={() =>
+                            item.ref.current?.scrollIntoView({
+                                behavior: "smooth",
+                            })}
+                            className="text-left px-4 py-1 rounded-x w-full rounded my-2 font-medium text-lg  hover:bg-gray-400/45 text-white
+                              transition-all duration-100  "
+                            key={item.name}>
+                            {" "}
+                            {item.name}
+                        </button>))
+                    }
+        </aside>
 
-            <div ref={aniref} className=" flex flex-row justify-evenly w-full py-8">
-                <div className=" hider text-center">
-                    <div className="p-[30px] border-gray-400 border-4 rounded-full w-fit">
-                        <BsFillChatTextFill className="text-[80px] text-blue-500" />
-                    </div>
-                    <p className="m-2">Chat with friends</p>
-                </div>
-
-                <div className=" hider text-center">
-                    <div className="p-[30px] border-gray-400 border-4 rounded-full w-fit">
-                        <FcVideoCall className="text-[80px]" />
-                    </div>
-                    <p className="m-2">Video Call</p>
-                </div>
-
-                <div className="hider text-center">
-                    <div className="p-[30px] border-gray-400 border-4 rounded-full w-fit">
-                        <RiFolderSharedFill className="text-[80px] text-yellow-500" />
-                    </div>
-                    <p className="m-2">Share files</p>
-                </div>
-            </div>
-
-            <div
-                ref={create_room_ref}
-                className="h-[100vh] my-10 flex flex-col justify-evenly  items-center">
-                <h3 className="w-full text-center text-[25px] font-semibold">
-                Create a Room
-                </h3>
-                <CreateRoom handleRoomCreate={handleRoomCreate} className={"w-[300px]"} />
-            </div>
-
-            <div
-                ref={join_room_ref}
-                className="h-[100vh] my-10 flex flex-col justify-evenly  items-center">
-                <h3 className="w-full text-center text-[25px] font-semibold">
-                    Start communicating with friends
-                </h3>
-                <JoinRoom handleJoinRoom={handleJoinRoom} className={"w-[300px]"} />
-            </div>
-
-            <div
-                className="flex flex-col items-center w-full relative overflow-hidden"
-                ref={about_ref}>
-                <h1 className="text-[50px] text-center w-full font-bold text-teal-400 mt-8 m-8">
-                    whisperNet
-                </h1>
-                <div className="flex flex-col justify-evenly text-center w-[80%]  text-xl">
-                    <div className="z-20 ">
-                        <p className="text-teal-400 inline">
-                            whisperNet 
-                        </p> is a
-                        decentralized chat application that aims to achieve complete
-                        privacy for chatting and sharing files.
-                    </div>
-                <div className="z-20 border-b-2 border-white pb-8">
-                    It allows users to communicate securely using WebRTC technology.It
-                    also supports file sharing directly between peers without relying
-                    on central servers
-                </div>
-
-                <div className="flex flex-col w-full  mt-4">
-                    <h3 className="z-20 text-[25px] mb-8 ">
-                        How it works?
-                    </h3>
-
-                    <div className="flex flex-row justify-between">
-                        <div className="w-[50%] font-semibold text-[25px] z-20 bg-teal-800 m-4 rounded-xl p-8 text          border-white border-2 flex flex-row items-center px-4 ">
-                            whisperNet uses the WebRTC protocol to establish connection
-                            between two peers
-                        </div>
-                        <div
-                            id="webrtc_logo_animation"
-                            className=" items-end   flex flex-col z-10">
+        <main className="w-full  md:border-l-[1px] border-gray-400 ">
+          <div className="w-full  md:h-[100vh] relative justify-center    flex flex-col items-center text-white">
+            <div className="flex flex-row p-8 md:text-[30px] text-2xl font-bold text-center  z-20">
+          <p className="">Welcome to 
+          </p><p className="text-teal-400 z-20 mx-2 name-shadow">whisperNet</p></div>
+          <h2 className="p-8 md:text-[40px] text-3xl text-white font-bold z-20 text-center">A completely private and secure chat application </h2>
+          <div
+                            id="webrtc_logo_animation "
+                            className="absolute top-0 right-0 flex flex-col z-[1] opacity-70">
                             <svg
-                                className=" w-[400px] overflow-visible"
+                                className=" w-[100vh] min-w-[700px] max-md:w-[100vw] md:translate-x-[40%]  max-md:translate-x-[300px] overflow-visible "
                                 viewBox="0 -3.5 256 256"
                                 version="1.1"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -387,13 +316,92 @@ function Home() {
                       </g>{" "}
                                 </g>
                             </svg>
+          </div>
+          <div ref={aniref} className="z-20 flex flex-row max-md:flex-col items-center justify-evenly w-full py-8 font-bold"> 
+                <div className="  text-center max-md:w-full">
+                  <div className="flex flex-col items-center justify-start w-full ">
+                    <div className="p-[30px] bg-black border-gray-400 border-4 rounded-full w-fit ">
+                        <BsFillChatTextFill className="text-[80px] text-blue-500" />
+                    </div>
+                    <p className="m-2 text-xl">Chat with friends</p>
+                    </div>
+                </div>
+
+                <div className=" text-center max-md:w-full">
+                <div className="flex flex-col items-center justify-start w-full ">
+                    <div className="p-[30px] bg-black border-gray-400 border-4 rounded-full w-fit">
+                        <FcVideoCall className="text-[80px]" />
+                    </div>
+                    <p className="m-2 text-xl">Video Call</p>
+                </div>
+                </div>
+
+                <div className=" text-center max-md:w-full">
+                <div className="flex flex-col items-center justify-start w-full ">
+                    <div className="p-[30px]   bg-black  border-gray-400 border-4 rounded-full w-fit">
+                        <RiFolderSharedFill className="  text-[80px] text-yellow-500" />
+                    </div>
+                    <p className="m-2 text-xl">Share files</p>
+                </div>
+                </div>
+            </div>
+            </div>
+
+
+                      <div ref={create_room_ref} className="w-full p-8 h-[100vh]  z-[30] flex flex-col justify-evenly items-center ">
+                      <h3 className="w-full text-white text-center text-[25px] font-semibold">
+                Create a Room
+                </h3>
+                <CreateRoom handleRoomCreate={handleRoomCreate} className={" w-[300px]"} />
+
+                      </div>
+
+                    <div ref={join_room_ref} className="w-full p-8 h-[100vh]  z-[30] flex flex-col justify-evenly items-center ">
+                    <h3 className="w-full text-white text-center text-[25px] font-semibold">
+                Join a Room
+                </h3>
+                <JoinRoom handleJoinRoom={handleJoinRoom} className={"w-[300px]"} />
+
+                    </div>
+
+                    <div
+                className="flex flex-col items-center w-full relative overflow-hidden"
+                ref={about_ref}>
+                <h1 className="text-[50px] text-center w-full font-bold text-teal-400 mt-16 m-8">
+                    whisperNet
+                </h1>
+                <div className="flex flex-col justify-evenly text-center w-[80%] text-white text-xl">
+                    <div className="z-20  ">
+                        <p className="text-teal-400 inline">
+                            whisperNet 
+                        </p> is a
+                        decentralized chat application that aims to achieve complete
+                        privacy for chatting and sharing files.
+                    </div>
+                <div className="z-20 border-b-2 border-white pb-8">
+                    It allows users to communicate securely using WebRTC technology.It
+                    also supports file sharing directly between peers without relying
+                    on central servers
+                </div>
+
+                <div className="flex flex-col w-full  mt-4">
+                    <h3 className="z-20 text-[25px] mb-8 ">
+                        How it works?
+                    </h3>
+
+                    <div className="flex flex-row justify-between">
+                        <div className="w-full font-semibold text-[25px] z-20 bg-teal-800 m-4 rounded-xl p-8 text-white  border-white border-2 flex flex-row items-center px-4 ">
+                            whisperNet uses the WebRTC protocol to establish connection
+                            between two peers
                         </div>
+
+                        	
                     </div>
 
                     <div className="w-full flex flex-col items-center my-[150px] ">
                         <h3 className="text-teal-400 text-[30px] font-bold border-teal-400 border-b-2">Features</h3>
 
-                        <div ref={features_parent} className=" w-[80%] flex-flex-col">
+                        <div ref={features_parent} className=" w-[80%] max-md:w-full flex-flex-col">
                         <p className="feat_main py-2 my-6 bg-[#bf0000db] rounded-md  ">Decentralized one-to-one chat</p>
                         <p className="feat_main py-2 my-6 bg-[#0089ccdb] rounded-md ">Secure communication using WebRTC</p>
                         <p className="feat_main py-2 my-6 bg-[#ffcc00db] rounded-md  ">Peer-to-peer file sharing (images, videos, and documents)</p>
@@ -406,11 +414,20 @@ function Home() {
             </div>
         </div>
 
+
+
+
+        </main>
+
+        
       </div>
+      
+
+      
     </div>
   );
 }
 
 export default Home;
-// hover:shadow-[0_0_5px_1px]
+// 
 // hover:shadow-gray-300

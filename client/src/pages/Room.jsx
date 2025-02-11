@@ -22,7 +22,6 @@ function Room() {
 
   const [incomingCall, setIncomingCall] = useState(false);
   const [inCall, setInCall] = useState(false);
-  const [negotiated, setNegotiated] = useState(false);
 
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
@@ -287,6 +286,7 @@ const downloadFile = useCallback(()=>{
       fileChannel.current = peer.peer.createDataChannel("fileChannel");
 
       console.log("created dataChannel", dataChannel.current.readyState);
+      console.log("Created filechannel", fileChannel.current.readyState);
       // Receiving messages
       fileChannel.current.onmessage = handleIncomingFile;
       dataChannel.current.onmessage = handleIncomingMessage;
@@ -298,10 +298,7 @@ const downloadFile = useCallback(()=>{
 
   const handleNegoNeeded = useCallback(async () => {
     // Ensure this peer is the one initiating the negotiation
-    if (negotiated) {
-      console.log("Already negotiated");
-      return;
-    }
+    
     console.log("Now negotiating");
     try {
       const offer = await peer.getOffer();
@@ -309,7 +306,7 @@ const downloadFile = useCallback(()=>{
     } catch (error) {
       console.error("Error during negotiation:", error);
     }
-  }, [remoteSocketId, socket, negotiated]);
+  }, [remoteSocketId, socket]);
 
   const handleNegoInquire = useCallback(
     async ({ from, offer }) => {
@@ -328,7 +325,7 @@ const downloadFile = useCallback(()=>{
     async ({ from, ans }) => {
       console.log("Accepting answer of negotiation from ", from);
       await peer.setAnswer(ans);
-      setNegotiated(true);
+   
       socket.emit("second-nego", { to: remoteSocketId });
     },
     [socket, remoteSocketId]
@@ -351,14 +348,14 @@ const downloadFile = useCallback(()=>{
   }, []);
 
   const callUser = useCallback(async () => {
-    setNegotiated(false);
+
     setInCall(true);
     await sendStreams();
     socket.emit("video-call", { to: remoteSocketId });
   }, [socket, remoteSocketId, sendStreams]);
 
   const handleVideoCall = useCallback(async () => {
-    setNegotiated(false);
+  
     setIncomingCall(false);
     setInCall(true);
     await sendStreams();
@@ -370,12 +367,19 @@ const downloadFile = useCallback(()=>{
     if (!remoteSocketId) return;
     if (text.length == 0) return;
     console.log("Message sent at: ", Date.now());
-    dataChannel.current.send(JSON.stringify({ type: "text", value: text }));
-    setMessages((messages) => [
-      ...messages,
-      { type: "text", yours: true, value: text },
-    ]);
-    setText("");
+    try{
+      dataChannel.current.send(JSON.stringify({ type: "text", value: text }));
+      setMessages((messages) => [
+        ...messages,
+        { type: "text", yours: true, value: text },
+      ]);
+      setText("");
+    }
+    catch (err){
+      alert("Could not send message");
+      console.log("Error: ", err)
+    }
+    
   };
 
   const handleFileChange = (event) => {
@@ -402,7 +406,7 @@ const downloadFile = useCallback(()=>{
     // Reset call-related states
     setInCall(false);
     setIncomingCall(false);
-    setNegotiated(false);
+   
   }, [myStream, remoteStream]);
 
   useEffect(() => {
@@ -522,8 +526,8 @@ const downloadFile = useCallback(()=>{
 
 
   return (
-    <div className="flex w-full justify-center flex-row px-4 items-center bg-black text-white h-[100vh]">
-      <div className="lg:w-[25%] flex flex-col items-center relative">{!inCall &&
+    <div className="flex w-full justify-center max-md:items-stretch flex-row px-4 items-center bg-black text-white h-[100vh]">
+      <div className="lg:w-[25%] max-md:hidden  flex flex-col items-center relative">{!inCall &&
       <FileBox
         className="w-full"
         files={files}
@@ -540,7 +544,7 @@ const downloadFile = useCallback(()=>{
          </div>}</div>
       
 
-      <div className="flex flex-col max-lg:w-full  md:w-[50%] min-w-[400px]  border-2 rounded-2xl border-gray-400 ">
+      <div className="flex flex-col  md:w-[50%] max-md:w-full border-2 rounded-2xl border-gray-400 ">
         
       <div className="flex flex-row items-center justify-between p-4 border-b-2 border-gray-400 text-center ">
          {roomData &&  <div className="mx-4">RoomId: {roomData.roomNum}</div>}

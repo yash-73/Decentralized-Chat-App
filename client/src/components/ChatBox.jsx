@@ -16,7 +16,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
       {/* Message History */}
       <div
         id="message-history"
-        className="flex flex-col w-full h-[50vh] overflow-y-scroll scroll-smooth bg-[#111111] p-2"
+        className="flex flex-col w-full h-[50vh] max-md:[h-70vh] overflow-y-scroll scroll-smooth bg-[#111111] p-2"
       >
         {messages.map((message, index) => (
           <Messages

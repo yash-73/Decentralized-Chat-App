@@ -4,11 +4,8 @@ import './index.css'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import App from './App.jsx'
 import Home from './pages/Home.jsx'
-import Login from './components/Login.jsx'
 import Room from './pages/Room.jsx'
-import Signup from './components/Signup.jsx'
 import None from './components/None.jsx'
-import AuthLayout from './components/AuthLayout.jsx'
 import { Provider } from 'react-redux'
 import store from './store/store.js'
 
@@ -21,30 +18,16 @@ const router = createBrowserRouter([
     children: [
         {
             path: "/",
-            element: <AuthLayout authentication={false}>
+            element: 
               <Home/>
-              </AuthLayout>
-        },
-        {
-            path: "/login",
-            element: (
-                <AuthLayout authentication={false}> 
-                    <Login/>
-                    </AuthLayout>
-            ),
+             
         },
         {
             path: "/Room/*",
-            element: (
-                    <AuthLayout authentication={false}>
-                      <Room />
-                    </AuthLayout>
+            element: (       
+                      <Room />    
             ),
-        },
-        {
-          path: "/signup",
-          element: (<Signup/>)
-        },
+        }, 
         {
           path: '*',
           element: (

@@ -207,5 +207,22 @@
     transition-delay: 600ms;
 }
 
+.name-shadow{
+    transition: all;
+    transition-duration: 300ms;
 
+}
 
+.name-shadow:hover{
+    text-shadow: rgb(63, 250, 250) 1px 0 10px;
+    color:rgb(30, 232, 232)
+}
+
+.nav-gradient{
+    background: linear-gradient(0deg, blur(15px), blur(0px));
+    backdrop-filter: blur(15px);
+}
+
+::-webkit-scrollbar {
+    display: none;
+  }
