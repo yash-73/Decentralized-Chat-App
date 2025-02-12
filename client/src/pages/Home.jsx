@@ -5,6 +5,7 @@ import JoinRoom from "../components/JoinRoom";
 import CreateRoom from "../components/CreateRoom";
 import { useDispatch } from "react-redux";
 import { createRoom } from "../store/roomSlice";
+import {setUserData} from '../store/userSlice';
 import { BsFillChatTextFill } from "react-icons/bs";
 import { FcVideoCall } from "react-icons/fc";
 import { RiFolderSharedFill } from "react-icons/ri";
@@ -94,7 +95,9 @@ function Home() {
 
   const handleRoomCreate = async (username, roomNum, roomPassword) => {
     socket.emit("create-room", { roomNum, roomPassword });
+
     setTimeout(()=>{
+      
       handleJoinRoom(username, roomNum, roomPassword);
     },500)
     
@@ -121,7 +124,15 @@ function Home() {
     (data) => {
       console.log("Joining room", data.roomNum);
       console.log(data);
-      dispatch(createRoom({ roomData: data }));
+      dispatch(createRoom({ roomData: {
+        roomNum: data.roomNum,
+        roomPass: data.roomPass
+      } }));
+      dispatch(setUserData({
+        userData : {
+        username: data.email,
+        socketId: data.socketId
+      }}))
       navigate(`/room/${data.roomNum}`);
     },
     [navigate, dispatch]

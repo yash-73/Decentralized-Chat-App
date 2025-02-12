@@ -1,21 +1,22 @@
 import PropTypes from "prop-types";
 
-function VideoCall({ myStream, remoteStream, remoteEmail, className }) {
+function VideoCall({ myStream, remoteStream, remoteEmail }) {
+
   return (
-    <div className={`${className} h-full`}>
+    <div className={`w-full flex flex-row justify-center py-8 `}>
       {remoteStream ? (
-        <div className="flex w-[90%]  relative flex-col items-center text-center">
+        <div className=" relative">
           <video
             ref={(ref) => {
               if (ref) ref.srcObject = remoteStream;
             }}
             autoPlay
             muted
-            className=" rounded-2xl w-full shadow-lg border-gray-300 border-2"
+            className={`rounded-3xl max-h-[500px] border-gray-300 border-2`}
           />
 
           {myStream && (
-            <div className="absolute flex flex-col items-center text-center w-[30%]  bottom-0 right-0 ">
+            <div className=" md:absolute flex flex-col items-center text-center md:w-[30%]  bottom-0 right-0 ">
               <video
                 ref={(ref) => {
                   if (ref) ref.srcObject = myStream;

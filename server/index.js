@@ -65,11 +65,13 @@ io.on('connection', (socket) => {
           { roomNum: room },
           { $push: { members: { username: from, socketId: socket.id } } }
         );
-        socket.join(room);
         socketToEmailMap.set(socket.id, from);
         console.log(socketToEmailMap)
         io.to(room).emit('user-joined', { email: from, socketId: socket.id });
+        socket.join(room);
         io.to(socket.id).emit('joining-room', { roomNum: room, roomPass });
+        
+        
       } else {
         io.to(socket.id).emit('error', { msg: 'Room is full' });
       }
@@ -99,6 +101,10 @@ io.on('connection', (socket) => {
   socket.on('nego-answer', ({ to, ans }) => {
     io.to(to).emit('nego-done', { from: socket.id, ans });
   });
+
+  socket.on('second-nego',({to})=>{
+    io.to(to).emit('second-nego', {from: socket.id})
+})
 
   socket.on('video-call', ({ to }) => {
     io.to(to).emit('video-call', { from: socket.id });

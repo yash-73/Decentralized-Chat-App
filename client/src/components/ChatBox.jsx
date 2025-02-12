@@ -7,22 +7,21 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
   const bottomRef = useRef();
 
   useEffect(() => {
-    // Ensure the scroll-to-bottom functionality works
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
-    <div className="flex flex-col justify-end">
+    <div className="flex flex-col justify-end h-full">
       {/* Message History */}
       <div
         id="message-history"
-        className="flex flex-col w-full h-[50vh] max-md:[h-70vh] overflow-y-scroll scroll-smooth bg-[#111111] p-2"
+        className="flex flex-col w-full max-md:h-[60vh] md:h-[60vh] overflow-y-scroll scroll-smooth bg-[#111111] p-2"
       >
         {messages.map((message, index) => (
           <Messages
             key={index}
             message={message}
-            className="mx-4 my-2 px-4 py-2 w-fit rounded text-white font-semibold"
+            className="mx-4 px-4 my-2 py-2 rounded text-white font-semibold"
           />
         ))}
         <div ref={bottomRef}></div>
@@ -31,7 +30,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
       {/* Input Section */}
       <form
         id="message-box"
-        className="w-full flex flex-col justify-between px-4 py-2 rounded-2xl border-b-0 border-x-0 border-[1px] border-gray-400"
+        className="w-full flex flex-col justify-between px-4  rounded-2xl border-b-0 border-x-0 border-[1px] border-gray-400"
         onSubmit={sendMessage}
       >
         <textarea
@@ -42,10 +41,9 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault(); // Prevent the default behavior of adding a newline
-              sendMessage(e); // Trigger the sendMessage function
+              e.preventDefault(); 
+              sendMessage(e);
             } else if (e.key === "Enter" && e.shiftKey) {
-              // Allow Shift + Enter to insert a new line
               setText((prev) => prev + "\n");
             }
           }}

@@ -1,6 +1,8 @@
-import {} from "react";
+import {useEffect, useState} from "react";
 import { MdOutlineAttachFile } from "react-icons/md";
 import PropTypes from "prop-types";
+import { FaAngleDown } from "react-icons/fa";
+import { FaAngleUp } from "react-icons/fa";
 
 function FileBox({
   className,
@@ -11,11 +13,12 @@ function FileBox({
   sendDownloadRequest,
   sendStatus,
   downloadStatus,
-  remoteEmail
+  remoteEmail,
+  removeFile
 }) {
   const displayName = (name) => {
-    if (name.length > 16) {
-      return name.slice(0, 16) + "...";
+    if (name.length > 50) {
+      return name.slice(0, 50) + "...";
     }
     return name;
   };
@@ -33,35 +36,55 @@ function FileBox({
     return sizeInKB.toFixed(2) + " KB";
   };
 
+  const [closed, setClosed]  = useState(true);
+
+
+  useEffect(()=>{
+    if(files || receivingFile){
+      setClosed(false);
+    }
+  },[files, receivingFile])
+
+
   return (
     <div
-      className={`${className} flex flex-col items-center justify-center px-4`}
-    > 
+      className={`${className} flex flex-col items-center justify-center px-4 relative `}
+    >  <FaAngleDown 
+    onClick={()=>{setClosed(false)}}
+     className={`${closed ? "" : 'hidden'}  absolute top-0 right-0 m-2 z-20 text-[20px] cursor-pointer text-white`}/>
+    <FaAngleUp 
+    onClick={()=>{setClosed(true)}}
+    className={`${closed ? "hidden" : ''} absolute top-0 right-0 m-2 z-20 text-[20px] cursor-pointer text-white`}/>
+    
       {files && (
-        <div className="w-full flex flex-row  p-4 border-2 border-gray-400 left-0 backdrop-blur-md z-10 justify-evenly items-center">
-          <div className="flex flex-col items-center">
-            <div className="border-2 border-gray-400 flex flex-row justify-center items-center p-4 m-4">
+        <div className={`${closed ? "scale-y-[0]" : "scale-100" } duration-150 absolute top-0 w-full flex flex-col border-2 border-gray-400 bg-black/35 backdrop-blur-lg z-10 justify-between items-center overflow-y-hidden`}>
+
+        
+            <div className="border-2 border-gray-400 flex flex-col justify-center items-center p-4 m-4">
               <MdOutlineAttachFile className="text-4xl text-gray-300" />
             </div>
             <p>{displayName(files.name)}</p>
             <p>{displaySize(files.size)}</p>
             {fileProgress > 0 && <progress value={fileProgress} max="100" />}
-          </div>
+  
 
+<div className="flex flex-row">
           <button
             onClick={handleSendFileButton}
             disabled={sendStatus != "Send"}
-            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 m-4 hover:bg-gray-300 cursor-pointer hover:text-[#181818] transition-all delay-75"
+            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 m-4 hover:bg-green-700 bg-green-600 cursor-pointer transition-all delay-75"
           >
             {sendStatus}
           </button>
+
+          <button onClick={removeFile} className= "border-[1px] border-gray-400 px-4 py-2 m-4 bg-red-500  hover:bg-red-700 duration-100 p-2 rounded-lg">Cancel</button></div>
         </div>
       )}
 
       {receivingFile && (
-        <div className="w-full flex flex-row p-4 top-0 border-2 border-gray-400 left-0 backdrop-blur-md z-10 justify-evenly items-center">
-          <div className="flex flex-col items-center">
-          <p className="self-center">Sent from {remoteEmail}</p>
+        <div className={`${closed ? "scale-y-[0]" : "scale-100" } duration-150 absolute top-0 w-full flex flex-col border-2 border-gray-400 bg-black/35 backdrop-blur-lg z-10 justify-between items-center overflow-y-hidden`}>
+          
+          <p>Sent from {remoteEmail}</p>
           
             <div className="border-2 border-gray-400 flex flex-row justify-center items-center p-4 m-4">
             
@@ -71,15 +94,19 @@ function FileBox({
             <p>{displaySize(receivingFile.size)}</p>
             
             {fileProgress > 0 && <progress value={fileProgress} max="100" />}
-          </div>
+          
 
           <button
             onClick={sendDownloadRequest}
             disabled={downloadStatus != "Download"}
-            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 m-4 hover:bg-gray-300 cursor-pointer hover:text-[#181818] transition-all delay-75"
+            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 my-4 hover:bg-green-700 bg-green-600 cursor-pointer transition-all delay-75"
           >
             {downloadStatus}
           </button>
+
+          <button
+          onClick={()=>{removeFile()}}
+           className= "border-[1px] border-gray-400 px-4 py-2 m-4 bg-red-500  hover:bg-red-700 duration-100 p-2 rounded-lg">Cancel</button>
         </div>
       )}
     </div>
@@ -101,7 +128,8 @@ FileBox.propTypes = {
   sendDownloadRequest: PropTypes.func.isRequired,
   sendStatus: PropTypes.string,
   downloadStatus: PropTypes.string,
-  remoteEmail: PropTypes.string
+  remoteEmail: PropTypes.string,
+  removeFile: PropTypes.func,
 };
 
 export default FileBox;

@@ -3,6 +3,7 @@ import { SocketContext } from "../provider/Socket";
 import peer from "../service/PeerService";
 import { FcVideoCall } from "react-icons/fc";
 import { IoCall } from "react-icons/io5";
+import { MdCallEnd } from "react-icons/md";
 import VideoCall from "../components/VideoCall";
 import VideoCallButtons from "../components/VideoCallButtons";
 import ChatBox from "../components/ChatBox";
@@ -10,6 +11,7 @@ import "./Room.css";
 import FileBox from "../components/FileBox";
 import {encode, decode} from 'base64-arraybuffer'
 import { useSelector } from "react-redux";
+
 function Room() {
   const CHUNK_SIZE = 16 * 1024;
 
@@ -26,7 +28,7 @@ function Room() {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [files, setFiles] = useState();
-
+  const [negotiated, setNegotiated] = useState(false);
   const [fileProgress, setFileProgress] = useState(0);
   const [receivingFile, setReceivingFile] = useState(null);
   const [sendStatus, setSendStatus] = useState("Send");
@@ -37,6 +39,7 @@ function Room() {
   const fileChannel = useRef();
 
   const roomData = useSelector((state)=> state.room.roomData);
+  // const userData = useSelector((state)=> state.user.userData);
 
   const handleIncomingMessage = useCallback((e) => {
     console.log("Message received at: ", Date.now());
@@ -252,13 +255,16 @@ const downloadFile = useCallback(()=>{
 
   const handleNewUserJoined = useCallback(
     async (data) => {
-      const { email, socketId } = data;
-      setRemoteEmail(email);
-      console.log(email, " joined the room");
-      setRemoteSocketId(socketId);
-
-      const offer = await peer.getOffer();
-      socket.emit("connect-user", { to: socketId, offer });
+      setTimeout(async ()=>{
+        const { email, socketId } = data;
+        setRemoteEmail(email);
+        console.log(email, " joined the room");
+        console.log("remoetSocketId: ",socketId);
+        setRemoteSocketId(socketId);
+  
+        const offer = await peer.getOffer();
+        socket.emit("connect-user", { to: socketId, offer });
+      }, 500)
     },
     [socket]
   );
@@ -287,9 +293,12 @@ const downloadFile = useCallback(()=>{
 
       console.log("created dataChannel", dataChannel.current.readyState);
       console.log("Created filechannel", fileChannel.current.readyState);
+
       // Receiving messages
       fileChannel.current.onmessage = handleIncomingFile;
       dataChannel.current.onmessage = handleIncomingMessage;
+
+
 
       //changes to be me here to receive files
     },
@@ -298,7 +307,11 @@ const downloadFile = useCallback(()=>{
 
   const handleNegoNeeded = useCallback(async () => {
     // Ensure this peer is the one initiating the negotiation
-    
+    if(peer.peer.connectionState == "stable") return;
+    if (negotiated) {
+      console.log("Already negotiated");
+      return;
+    }
     console.log("Now negotiating");
     try {
       const offer = await peer.getOffer();
@@ -306,7 +319,7 @@ const downloadFile = useCallback(()=>{
     } catch (error) {
       console.error("Error during negotiation:", error);
     }
-  }, [remoteSocketId, socket]);
+  }, [remoteSocketId, socket, negotiated]);
 
   const handleNegoInquire = useCallback(
     async ({ from, offer }) => {
@@ -325,21 +338,37 @@ const downloadFile = useCallback(()=>{
     async ({ from, ans }) => {
       console.log("Accepting answer of negotiation from ", from);
       await peer.setAnswer(ans);
-   
+      setNegotiated(true);
+      if(peer.peer.connectionState == "stable") return;
       socket.emit("second-nego", { to: remoteSocketId });
+      
     },
     [socket, remoteSocketId]
   );
 
   const sendStreams = useCallback(async () => {
-    const videoConstraints =  {
-      width: { ideal: 1280, min: 640, max: 1920 },  // Set preferred width
-      height: { ideal: 720, min: 480, max: 1080 }, // Set preferred height
-      frameRate: { ideal: 30, max: 60 }  // Increase frame rate for smoother video
+    const screenWidth = document.documentElement.clientWidth;
+console.log("Screen width (excluding scrollbar):", screenWidth);
+
+    const videoConstraintsPC =  {
+      width: { ideal: 1280, min: 640, max: 1920 }, 
+      height: { ideal: 720, min: 480, max: 1080 }, 
+      frameRate: { ideal: 30, max: 60 } 
+    }
+
+    const videoContraintsMobile = {
+      width: { ideal: 720, min: 480, max: 1080},
+      height: {ideal: 1280, min: 640, max: 1920 },
+      frameRate : {ideal: 30, max: 60} 
+    }
+
+    let constraints = videoConstraintsPC;
+    if (screenWidth < 600){
+        constraints = videoContraintsMobile;
     }
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
-      video: videoConstraints,
+      video: constraints,
     });
     setMyStream(stream);
     stream.getTracks().forEach((track) => {
@@ -348,14 +377,14 @@ const downloadFile = useCallback(()=>{
   }, []);
 
   const callUser = useCallback(async () => {
-
+    setNegotiated(false);
     setInCall(true);
     await sendStreams();
     socket.emit("video-call", { to: remoteSocketId });
   }, [socket, remoteSocketId, sendStreams]);
 
   const handleVideoCall = useCallback(async () => {
-  
+    setNegotiated(false);
     setIncomingCall(false);
     setInCall(true);
     await sendStreams();
@@ -391,6 +420,13 @@ const downloadFile = useCallback(()=>{
     }
   };
 
+  const removeFile = ()=>{
+    setFiles(null);
+    setReceivingFile(null);
+    setDownloadStatus("Download")
+    setSendStatus("Send")
+  }
+
   const endCall = useCallback(() => {
     // Stop all tracks in my stream
     if (myStream) {
@@ -404,6 +440,7 @@ const downloadFile = useCallback(()=>{
       setRemoteStream(null);
     }
     // Reset call-related states
+    setNegotiated(false);
     setInCall(false);
     setIncomingCall(false);
    
@@ -418,6 +455,8 @@ const downloadFile = useCallback(()=>{
           "Text Data channel on other side : ",
           dataChannel.current.readyState
         );
+
+        if(dataChannel.current.readyState != "open") handleNegoNeeded();
         dataChannel.current.onmessage = handleIncomingMessage;
       } else if (event.channel.label == "fileChannel") {
         fileChannel.current = event.channel;
@@ -425,6 +464,7 @@ const downloadFile = useCallback(()=>{
           "file data channel on other side: ",
           fileChannel.current.readyState
         );
+        if(fileChannel.current.readyState != "open") handleNegoNeeded();
         fileChannel.current.onmessage = handleIncomingFile;
       }
     };
@@ -449,34 +489,9 @@ const downloadFile = useCallback(()=>{
       fileChannel.current.onmessage = handleIncomingFile;
   }, [handleIncomingFile]);
 
-  useEffect(()=>{
-    if (remoteStream != null){
-      setInterval(()=>{
-        remoteStream.getVideoTracks().forEach(track =>{
-          const settings = track.getSettings();
-          console.log(`Current resolution: ${settings.width}x${settings.height}`)
-        })
-      },2000)
-    }
-    return ()=>{
-      
-    }
-  },[remoteStream])
 
-  useEffect(()=>{
-    if (myStream != null){
-      setInterval(()=>{
-        myStream.getVideoTracks().forEach(track =>{
-          const settings = track.getSettings();
-          console.log(`My resolution: ${settings.width}x${settings.height}`)
-        })
-      },2000)
-    }
 
-    return ()=>{
-
-    }
-  },[myStream])
+  
 
   useEffect(() => {
     socket.on("user-joined", handleNewUserJoined);
@@ -487,6 +502,7 @@ const downloadFile = useCallback(()=>{
     socket.on("second-nego", handleNegoNeeded);
     socket.on("end-call", () => {
       console.log("call ended by ", remoteSocketId);
+      alert("Call ended by", remoteSocketId)
       endCall();
     });
 
@@ -526,8 +542,73 @@ const downloadFile = useCallback(()=>{
 
 
   return (
-    <div className="flex w-full justify-center max-md:items-stretch flex-row px-4 items-center bg-black text-white h-[100vh]">
-      <div className="lg:w-[25%] max-md:hidden  flex flex-col items-center relative">{!inCall &&
+    <div className="bg-black w-full h-[100vh] overflow-y-scroll flex flex-row justify-center text-white ">
+      <div className="relative md:w-[55%]  max-md:w-full p-4 flex flex-col md:border-2 my-1 rounded-2xl md:border-gray-400">
+       
+        <div className="w-full flex flex-row justify-between ">
+        {roomData &&  <p className="">RoomId: {roomData.roomNum}</p>}
+        {roomData && <p className="">Room Password: {roomData.roomPass}</p>}
+        </div>
+
+        {!incomingCall && !inCall &&
+         <div className="my-1 flex flex-row justify-between items-center ">
+            {remoteSocketId ? `Connected to ${remoteEmail}` : `Empty Room`}
+          <div>
+            { remoteSocketId ?  (
+              <button
+                onClick={callUser}
+                disabled={remoteStream}
+                className="bg-[#181818] hover:bg-gray-800 transition-all delay-75 px-2 py-1 rounded-md  text-white  shadow-md"
+              >
+                <FcVideoCall className="text-4xl " />
+              </button>
+            ) : <button
+            className="bg-green-600 font-semibold hover:bg-green-700 transition-all delay-75 px-2 py-1 rounded-md  text-white  shadow-md"
+            onClick={(e)=>{e.preventDefault()}}
+            >Reconnect</button>}
+
+            </div>
+        </div>}
+
+
+        {incomingCall && (
+          <div className="flex flex-row justify-between  bg-gray-400 px-4 py-2 animate-pulse shadow-md">
+            <p>Call from {remoteEmail}</p>
+
+            <div>
+            <button
+              className="bg-blue-500 px-2 mx-2 py-1 rounded-md hover:bg-blue-600 text-white shadow-md"
+              onClick={handleVideoCall}
+            >
+              <IoCall className="text-3xl" />
+            </button>
+            <button   className="bg-red-500 px-2 py-1 rounded-md hover:bg-blue-600 text-white shadow-md"
+            onClick={()=>{
+              socket.emit('end-call', {to: remoteSocketId});
+              endCall();
+            }}>
+              <MdCallEnd className="text-3xl"/></button></div>
+          </div>
+        )}
+
+        {inCall && (
+          <div className="flex flex-col justify-between h-full">
+            <VideoCall
+              myStream={myStream}
+              remoteStream={remoteStream}
+              remoteEmail={remoteEmail}
+            />
+
+            <VideoCallButtons
+              myStream={myStream}
+              remoteSocketId={remoteSocketId}
+              endCall={endCall}
+
+              />
+              </div>
+            )}
+
+      {!inCall &&
       <FileBox
         className="w-full"
         files={files}
@@ -538,68 +619,13 @@ const downloadFile = useCallback(()=>{
         sendStatus={sendStatus}
         downloadStatus={downloadStatus}
         remoteEmail={remoteEmail}
+        removeFile={removeFile}
       />}
-      {link && <div>
-          <button className="px-2 border-[1px] py-2 hover:bg-gray-300 duration-100 transition-all hover:text-black cursor-pointer rounded-xl  border-white" onClick={downloadFile}>Download File</button>
-         </div>}</div>
-      
-
-      <div className="flex flex-col  md:w-[50%] max-md:w-full border-2 rounded-2xl border-gray-400 ">
-        
-      <div className="flex flex-row items-center justify-between p-4 border-b-2 border-gray-400 text-center ">
-         {roomData &&  <div className="mx-4">RoomId: {roomData.roomNum}</div>}
-          {roomData && <div className="mx-4">Room Password: {roomData.roomPass}</div>}
-          </div>
-        {!incomingCall && !inCall && <div className="flex flex-row justify-between items-center px-4 py-2">
-          <div>
-            {remoteSocketId ? `Connected to ${remoteEmail}` : `Empty Room`}
-          </div>
-          <div>
-            
-            { remoteSocketId &&  (
-              <button
-                onClick={callUser}
-                disabled={remoteStream}
-                className="bg-[#181818] hover:bg-gray-800 transition-all delay-75 px-2 py-1 rounded-md  text-white  shadow-md"
-              >
-                <FcVideoCall className="text-4xl " />
-              </button>
-            )}
-
-          </div>
-        </div>}
-
-        {incomingCall && (
-          <div className="flex flex-row justify-between  bg-gray-400 px-4 py-2 animate-pulse shadow-md">
-            <p>Call from {remoteEmail}</p>
-            <button
-              className="bg-blue-500 px-2 py-1 rounded-md hover:bg-blue-600 text-white shadow-md"
-              onClick={handleVideoCall}
-            >
-              <IoCall className="text-3xl" />
-            </button>
-          </div>
-        )}
-
-        {inCall && (
-          <div className="flex flex-col">
-            <VideoCall
-              myStream={myStream}
-              remoteStream={remoteStream}
-              remoteEmail={remoteEmail}
-              className="flex lg:flex-row py-8  flex-col justify-evenly  max-lg:items-center lg:items-end border-gray-400 border-[1px]"
-            />
-
-            <VideoCallButtons
-              myStream={myStream}
-              remoteSocketId={remoteSocketId}
-              endCall={endCall}
-            />
-          </div>
-        )}
+      {link && <div className="relative w-full ">
+          <button className="absolute top-0 right-0 backdrop-blur-lg bg-black/55 px-2 my-2 border-[1px] py-2 hover:bg-gray-300 w-[150px] self-end duration-100 transition-all hover:text-black cursor-pointer rounded-xl  border-white" onClick={downloadFile}>Download File</button>
+        </div>  }
 
         {!inCall && (
-          <div >
             <ChatBox
               messages={messages}
               text={text}
@@ -608,15 +634,9 @@ const downloadFile = useCallback(()=>{
               handleFileChange={handleFileChange}
               sendFile={sendFile}
             />
-          </div>
         )}
 
       </div>
-
-      <div className=" flex flex-col items-center justify-start lg:w-[25%] h-full">
-        
-      </div>
-
     </div>
   );
 }
