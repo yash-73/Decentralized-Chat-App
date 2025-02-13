@@ -1,6 +1,10 @@
 import PropTypes from "prop-types";
 
-function VideoCall({ myStream, remoteStream, remoteEmail }) {
+function VideoCall({ 
+  myStream,
+  remoteStream,
+  remoteEmail,
+  }) {
 
   return (
     <div className={`w-full flex flex-row justify-center py-8 `}>
@@ -23,7 +27,7 @@ function VideoCall({ myStream, remoteStream, remoteEmail }) {
                   
                 }}
                 autoPlay
-                muted
+               
                 className="rounded-lg shadow-lg border-black border-2"
               />
             </div>
@@ -42,7 +46,7 @@ function VideoCall({ myStream, remoteStream, remoteEmail }) {
                   if (ref) ref.srcObject = myStream;
                 }}
                 autoPlay
-                muted
+                
                 className="rounded-lg shadow-lg border-gray-300 border-[2px] m-4 lg:h-[200px] max-lg:w-[50%]"
               />
             </div>

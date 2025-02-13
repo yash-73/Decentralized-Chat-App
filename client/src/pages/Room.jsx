@@ -35,7 +35,7 @@ function Room() {
   const [downloadStatus, setDownloadStatus] = useState("Download");
   const [link, setLink] = useState(null)
   const[cancelDownload, setCancelDownload] = useState(false);
-  
+ 
   const dataChannel = useRef();
   const fileChannel = useRef();
 
@@ -607,12 +607,14 @@ const downloadFile = useCallback(()=>{
               myStream={myStream}
               remoteStream={remoteStream}
               remoteEmail={remoteEmail}
+              
             />
 
             <VideoCallButtons
               myStream={myStream}
               remoteSocketId={remoteSocketId}
               endCall={endCall}
+              
 
               />
               </div>

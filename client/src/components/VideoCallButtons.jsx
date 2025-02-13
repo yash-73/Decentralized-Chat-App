@@ -5,10 +5,16 @@ import { VscUnmute } from 'react-icons/vsc';
 import { SocketContext } from '../provider/Socket';
 import PropTypes from 'prop-types';
 
-function VideoCallButtons({ myStream, remoteSocketId, endCall, className }) {
-    const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-
+function VideoCallButtons({ 
+    myStream,
+    remoteSocketId,
+    endCall,
+    className,
+}) {
+    
+  // Optional stringv
+   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const socket = useContext(SocketContext);
 
     const handleEndCall = (e) => {
@@ -74,10 +80,10 @@ function VideoCallButtons({ myStream, remoteSocketId, endCall, className }) {
 
 // Props validation
 VideoCallButtons.propTypes = {
-    myStream: PropTypes.instanceOf(MediaStream), // `MediaStream` instance
-    remoteSocketId: PropTypes.string, // Optional string
-    endCall: PropTypes.func.isRequired, // Required function
-    className: PropTypes.string, // Optional string
+    myStream: PropTypes.instanceOf(MediaStream), 
+    remoteSocketId: PropTypes.string, 
+    endCall: PropTypes.func.isRequired,
+    className: PropTypes.string,
 };
 
 
