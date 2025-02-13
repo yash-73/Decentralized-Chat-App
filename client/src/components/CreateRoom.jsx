@@ -15,18 +15,11 @@ function CreateRoom({className, handleRoomCreate}) {
             setError("Username cannot be empty");
             return;
         }
-
         if(roomPassword.length < 6){
             setError("Password must contain atleast 6 characters");
             return;
         }
-
         handleRoomCreate(username, roomNum, roomPassword);
-        
-        console.log({
-            username,
-            roomNum, roomPassword
-        });
     }
 
     useEffect(()=>{

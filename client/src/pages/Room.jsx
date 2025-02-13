@@ -34,15 +34,24 @@ function Room() {
   const [sendStatus, setSendStatus] = useState("Send");
   const [downloadStatus, setDownloadStatus] = useState("Download");
   const [link, setLink] = useState(null)
-
+  const[cancelDownload, setCancelDownload] = useState(false);
+  
   const dataChannel = useRef();
   const fileChannel = useRef();
 
   const roomData = useSelector((state)=> state.room.roomData);
-  // const userData = useSelector((state)=> state.user.userData);
+  const userData = useSelector((state)=>state.user.userData);
+
+  useEffect(()=>{
+    if (roomData){
+          localStorage.setItem("roomData", JSON.stringify(roomData));
+    }
+    if(userData){
+      localStorage.setItem("userData", JSON.stringify(userData))
+    }
+  },[roomData, userData])
 
   const handleIncomingMessage = useCallback((e) => {
-    console.log("Message received at: ", Date.now());
     const msg = JSON.parse(e.data);
     setMessages((messages) => [
       ...messages,
@@ -62,8 +71,14 @@ function Room() {
         const chunk = files.slice(start, end);
 
         reader.onload = () => {
+
+          if(cancelDownload) {
+            setSendStatus("Send");
+            setFileProgress(0)
+            return;
+          }
+
           const arrayBuffer = reader.result;
-          // const chunkArray = Array.from(new Uint8Array(arrayBuffer));
           const chunkArray = encode(arrayBuffer);
 
           const chunkData = JSON.stringify({
@@ -73,7 +88,6 @@ function Room() {
             totalChunks: totalChunks,
           });
 
-          // Check if channel is ready to send
           if (
             fileChannel.current.bufferedAmount >
             fileChannel.current.bufferedAmountLowThreshold
@@ -106,58 +120,44 @@ function Room() {
           fileChannel.current.send(JSON.stringify({ type: "file-end" }));
         }
       };
-
-      // Start the process
       readAndSendChunk();
     } catch (error) {
       console.error("Error sending file:", error);
 
     }
-  }, [files, CHUNK_SIZE]);
+  }, [files, CHUNK_SIZE, cancelDownload]);
 
-  // Separate function to handle file assembly and download
 const assembleAndDownloadFile =useCallback(async (receivingFile) => {
 
   try {
-      // Verify all chunks are present
       const missingChunks = receivingFile.chunks.findIndex(chunk => !chunk);
       if (missingChunks !== -1) {
-          throw new Error(`Missing chunk at index ${missingChunks}`);
-          
+          throw new Error(`Missing chunk at index ${missingChunks}`);   
       }
-
-      // Calculate total size
       let totalSize = 0;
       receivingFile.chunks.forEach((chunk) => {
           if (chunk) totalSize += chunk.length;
       });
-
-      // Create final array and combine chunks
       const finalArray = new Uint8Array(totalSize);
       let offset = 0;
-
       receivingFile.chunks.forEach((chunk) => {
           if (chunk) {
               finalArray.set(chunk, offset);
               offset += chunk.length;
           }
       });
-
       const fileBlob = new Blob([finalArray], { type: receivingFile.type });
       const downloadUrl = URL.createObjectURL(fileBlob);
       const link1 = document.createElement("a");
       link1.href = downloadUrl;
       link1.download = receivingFile.name;
       setLink(link1)
-      console.log("Original size:", receivingFile.size, "Assembled size:", totalSize);
-
   } catch (error) {
       console.error("Error assembling file:", error);
       alert("Error assembling file: " + error.message);
       setReceivingFile(null);
       setFileProgress(0);
       setDownloadStatus("Download");
-
   }
 },[]);
 
@@ -178,7 +178,6 @@ const handleIncomingFile = useCallback(
       });
     } 
     else if (fileData.type == "start-download") {
-      console.log("Sending file now  ",Date.now());
       setSendStatus("Sending...");
       await sendFile();
     }
@@ -205,12 +204,10 @@ const handleIncomingFile = useCallback(
     else if (fileData.type === "file-end") {
       setReceivingFile((prev) => {
         if (!prev) return prev;
-
         if (prev.isComplete) {
           assembleAndDownloadFile(prev);
-          return null; // Reset receiving file state
+          return null;
         }
-
         return prev;
       });
     }
@@ -224,7 +221,6 @@ const downloadFile = useCallback(()=>{
       setReceivingFile(null);
       setFileProgress(0);
       setDownloadStatus("Download");
-      console.log("Download complete ", Date.now())
       setLink(null);
 },[link])
 
@@ -241,7 +237,6 @@ const downloadFile = useCallback(()=>{
         })
       );
     }
-    console.log("Button clicked");
     setSendStatus("Waiting for acceptance");
   };
 
@@ -257,11 +252,8 @@ const downloadFile = useCallback(()=>{
     async (data) => {
       setTimeout(async ()=>{
         const { email, socketId } = data;
-        setRemoteEmail(email);
-        console.log(email, " joined the room");
-        console.log("remoetSocketId: ",socketId);
         setRemoteSocketId(socketId);
-  
+        setRemoteEmail(email);
         const offer = await peer.getOffer();
         socket.emit("connect-user", { to: socketId, offer });
       }, 500)
@@ -271,7 +263,6 @@ const downloadFile = useCallback(()=>{
 
   const handleIncomingCall = useCallback(
     async ({ from, email, offer }) => {
-      console.log("Got offer from ", from, " : ", offer);
       setRemoteSocketId(from);
       setRemoteEmail(email);
 
@@ -283,23 +274,14 @@ const downloadFile = useCallback(()=>{
   );
 
   const handleCallAccept = useCallback(
-    async ({ from, ans }) => {
-      console.log("Got the answer from ", from, " : ", ans);
+    async ({ ans }) => {
+      
       await peer.setAnswer(ans);
-      console.log("Successful connection");
-
       dataChannel.current = peer.peer.createDataChannel("myDataChannel");
       fileChannel.current = peer.peer.createDataChannel("fileChannel");
-
-      console.log("created dataChannel", dataChannel.current.readyState);
-      console.log("Created filechannel", fileChannel.current.readyState);
-
       // Receiving messages
       fileChannel.current.onmessage = handleIncomingFile;
       dataChannel.current.onmessage = handleIncomingMessage;
-
-
-
       //changes to be me here to receive files
     },
     [handleIncomingMessage, handleIncomingFile]
@@ -308,11 +290,7 @@ const downloadFile = useCallback(()=>{
   const handleNegoNeeded = useCallback(async () => {
     // Ensure this peer is the one initiating the negotiation
     if(peer.peer.connectionState == "stable") return;
-    if (negotiated) {
-      console.log("Already negotiated");
-      return;
-    }
-    console.log("Now negotiating");
+    if (negotiated) return;
     try {
       const offer = await peer.getOffer();
       socket.emit("nego-needed", { to: remoteSocketId, offer });
@@ -323,7 +301,6 @@ const downloadFile = useCallback(()=>{
 
   const handleNegoInquire = useCallback(
     async ({ from, offer }) => {
-      console.log("Negotiation inquiry received from", from);
       try {
         const answer = await peer.createAnswer(offer);
         socket.emit("nego-answer", { to: from, ans: answer });
@@ -335,8 +312,7 @@ const downloadFile = useCallback(()=>{
   );
 
   const handleNegoDone = useCallback(
-    async ({ from, ans }) => {
-      console.log("Accepting answer of negotiation from ", from);
+    async ({  ans }) => {
       await peer.setAnswer(ans);
       setNegotiated(true);
       if(peer.peer.connectionState == "stable") return;
@@ -348,7 +324,6 @@ const downloadFile = useCallback(()=>{
 
   const sendStreams = useCallback(async () => {
     const screenWidth = document.documentElement.clientWidth;
-console.log("Screen width (excluding scrollbar):", screenWidth);
 
     const videoConstraintsPC =  {
       width: { ideal: 1280, min: 640, max: 1920 }, 
@@ -395,7 +370,6 @@ console.log("Screen width (excluding scrollbar):", screenWidth);
     e.preventDefault();
     if (!remoteSocketId) return;
     if (text.length == 0) return;
-    console.log("Message sent at: ", Date.now());
     try{
       dataChannel.current.send(JSON.stringify({ type: "text", value: text }));
       setMessages((messages) => [
@@ -420,11 +394,28 @@ console.log("Screen width (excluding scrollbar):", screenWidth);
     }
   };
 
-  const removeFile = ()=>{
+
+  const stopDownload = useCallback(()=>{
+    setCancelDownload(true);
+    socket.emit("stop-download", {to : remoteSocketId})
+  },[socket, remoteSocketId])
+
+  const stopUpload = useCallback(()=>{
+    socket.emit("stop-upload", {to: remoteSocketId})
+  },[socket, remoteSocketId])
+
+
+  const removeReceivingFile = ()=>{
+    setCancelDownload(false);
     setFiles(null);
+    setSendStatus("Send");
+    setFileProgress(0);
+  }
+
+  const removeUploadingFile = ()=>{
     setReceivingFile(null);
     setDownloadStatus("Download")
-    setSendStatus("Send")
+    setFileProgress(0);
   }
 
   const endCall = useCallback(() => {
@@ -489,10 +480,7 @@ console.log("Screen width (excluding scrollbar):", screenWidth);
       fileChannel.current.onmessage = handleIncomingFile;
   }, [handleIncomingFile]);
 
-
-
   
-
   useEffect(() => {
     socket.on("user-joined", handleNewUserJoined);
     socket.on("incoming-call", handleIncomingCall);
@@ -501,20 +489,32 @@ console.log("Screen width (excluding scrollbar):", screenWidth);
     socket.on("nego-done", handleNegoDone);
     socket.on("second-nego", handleNegoNeeded);
     socket.on("end-call", () => {
-      console.log("call ended by ", remoteSocketId);
       alert("Call ended by", remoteSocketId)
       endCall();
     });
 
-    socket.on("video-call", ({ from }) => {
-      console.log("Incoming video call from ", from);
+    socket.on("video-call", () => {
       setIncomingCall(true);
     });
 
-    socket.on("video-call-accepted", ({ from }) => {
-      console.log("Accepted call from ", from);
+    socket.on("video-call-accepted", () => {
       setInCall(true);
     });
+
+    socket.on('stop-download', ()=>{
+      alert("User cancelled download");
+      removeReceivingFile();
+    })
+
+    socket.on('stop-upload', ()=>{
+      alert("User stopped sharing");
+      removeUploadingFile();
+    })
+
+    socket.on('user-left', ({name, socketId})=>{
+      alert("User: ", name , " : ", socketId, " left");
+      setRemoteSocketId(null);
+    })
 
     return () => {
       socket.off("user-joined");
@@ -526,6 +526,8 @@ console.log("Screen width (excluding scrollbar):", screenWidth);
       socket.off("video-call");
       socket.off("video-call-accepted");
       socket.off("end-call");
+      socket.off('stop-download')
+      socket.off('stop-upload')
     };
   }, [
     socket,
@@ -564,7 +566,15 @@ console.log("Screen width (excluding scrollbar):", screenWidth);
               </button>
             ) : <button
             className="bg-green-600 font-semibold hover:bg-green-700 transition-all delay-75 px-2 py-1 rounded-md  text-white  shadow-md"
-            onClick={(e)=>{e.preventDefault()}}
+            onClick={(e)=>{
+              e.preventDefault()
+              
+                const from = JSON.parse(localStorage.getItem("userData"))
+                const room = JSON.parse(localStorage.getItem("roomData"))
+                const roomPass = JSON.parse(localStorage.getItem("roomData"))
+                console.log(from , room)
+                socket.emit('reconnect-user', ({from:from , room: room , roomPass: roomPass}));
+            }}
             >Reconnect</button>}
 
             </div>
@@ -619,7 +629,10 @@ console.log("Screen width (excluding scrollbar):", screenWidth);
         sendStatus={sendStatus}
         downloadStatus={downloadStatus}
         remoteEmail={remoteEmail}
-        removeFile={removeFile}
+        stopUpload={stopUpload}
+        stopDownload={stopDownload}
+        removeReceivingFile={removeReceivingFile}
+        removeUploadingFile={removeUploadingFile}
       />}
       {link && <div className="relative w-full ">
           <button className="absolute top-0 right-0 backdrop-blur-lg bg-black/55 px-2 my-2 border-[1px] py-2 hover:bg-gray-300 w-[150px] self-end duration-100 transition-all hover:text-black cursor-pointer rounded-xl  border-white" onClick={downloadFile}>Download File</button>

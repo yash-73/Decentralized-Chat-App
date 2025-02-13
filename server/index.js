@@ -1,36 +1,48 @@
 const express = require('express');
+require('dotenv').config();
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
-const https = require("https");
-const fs = require("fs");
+const http = require('http');
+// const https = require("https");
+// const fs = require("fs");
 const cors = require('cors');
 
+// const options = {
+//     key: fs.readFileSync("server.key"),
+//     cert: fs.readFileSync("server.cert"),
+//   };
 
-const options = {
-    key: fs.readFileSync("server.key"),
-    cert: fs.readFileSync("server.cert"),
-  };
+
 const app = express();
-const server = https.createServer(options, app)
-const io = new Server(server, { cors: { origin: 'https://10.201.27.81:5173' } });
+const server = http.createServer(app)
+const front_end_url = process.env.FRONT_END_URL;
+const io = new Server(server, { cors: { origin:front_end_url } });
 app.use(cors)
+const start = process.env.DB_START
+const end = process.env.DB_END
+const db_username = process.env.MONGO_CLUSTER_USERNAME
+const db_password = process.env.MONGO_CLUSTER_PASSWORD;
 mongoose
-  .connect('mongodb://127.0.0.1:27017/chatApp')
-  .then(() => console.log('MongoDB connected'))
+  .connect(`${start}${db_username}:${db_password}@${end}`)
+  .then(() => console.log('Database connected'))
   .catch((err) => console.log('Error:', err));
 
-// Room Schema
+
 const roomSchema = new mongoose.Schema({
   roomNum: { type: Number, required: true, unique: true },
   roomPass: { type: String, required: true },
   members: { type: Array, default: [] },
 });
 
-const Room = mongoose.model('Room', roomSchema);
-const socketToEmailMap = new Map();
+const memberSchema = new mongoose.Schema({
+  username: {type: String, required: true},
+  socketId: {type: String, required: true, unique: true}
+})
 
-// app.use(cors());
+const Member = mongoose.model("Member", memberSchema);
+const Room = mongoose.model('Room', roomSchema);
+
 app.use(bodyParser.json());
 
 io.on('connection', (socket) => {
@@ -39,7 +51,6 @@ io.on('connection', (socket) => {
   socket.on('create-room', async ({ roomNum, roomPassword }) => {
     try {
       await Room.create({ roomNum, roomPass: roomPassword });
-      console.log("Room created")
       io.to(socket.id).emit('room-created');
     } catch (err) {
       console.error('Error creating room:', err);
@@ -65,11 +76,15 @@ io.on('connection', (socket) => {
           { roomNum: room },
           { $push: { members: { username: from, socketId: socket.id } } }
         );
-        socketToEmailMap.set(socket.id, from);
-        console.log(socketToEmailMap)
+        await Member.create({
+          username: from,
+          socketId: socket.id
+        })
+        // socketToEmailMap.set(socket.id, from);
+        console.log(socket.id, " : ", from);
         io.to(room).emit('user-joined', { email: from, socketId: socket.id });
         socket.join(room);
-        io.to(socket.id).emit('joining-room', { roomNum: room, roomPass });
+        io.to(socket.id).emit('joining-room', { email: from, socketId: socket.id, roomNum: room, roomPass: roomPass });
         
         
       } else {
@@ -81,13 +96,20 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('connect-user', ({ to, offer }) => {
-    const email = socketToEmailMap.get(socket.id);
-    if (io.sockets.sockets.get(to)) {
-      io.to(to).emit('incoming-call', { from: socket.id, email, offer });
-    } else {
-      io.to(socket.id).emit('error', { msg: 'User not available' });
+  socket.on('connect-user', async ({ to, offer }) => {
+    try{
+      const member = await Member.findOne({socketId: socket.id})
+      const email = member.username;
+      if (io.sockets.sockets.get(to)) {
+        io.to(to).emit('incoming-call', { from: socket.id, email, offer });
+      } else {
+        io.to(socket.id).emit('error', { msg: 'User not available' });
+      }
     }
+    catch(error){
+      console.log("error: ", error)
+    }
+    
   });
 
   socket.on('call-accepted', ({ to, ans }) => {
@@ -118,6 +140,14 @@ io.on('connection', (socket) => {
     io.to(to).emit('end-call');
   });
 
+  socket.on('stop-download', ({to})=>{
+    io.to(to).emit('stop-download', {})
+  })
+
+  socket.on('stop-upload', ({to})=>{
+    io.to(to).emit('stop-upload', {}  )
+  })
+
   socket.on('disconnect', async () => {
     try {
       const room = await Room.findOne({ 'members.socketId': socket.id });
@@ -132,18 +162,24 @@ io.on('connection', (socket) => {
           { $pull: { members: { socketId: socket.id } } }
         );
         if (result.modifiedCount > 0) {
+          const member = Member.findOne({socketId: socket.id})
+          const name = member.username;
           console.log('User', socket.id, 'left the room');
+          io.to(room.roomNum).emit("user-left", {name: name, socketId: socket.id})
         } else {
           console.log('Error removing user from room');
         }
       }
       console.log(`Disconnected: ${socket.id}`);
       io.to(room).emit("Error", {msg: "Other user left"})
-      socketToEmailMap.delete(socket.id);
+      // socketToEmailMap.delete(socket.id);
+      await Member.findOneAndDelete({socketId: socket.id});
     } catch (error) {
       console.error('Error on disconnect:', error);
     }
   });
 });
 
-server.listen(8000, () => console.log('Server running on port 8000'));
+
+const port = process.env.BACK_END_PORT
+server.listen(port, () => console.log('Server running on port ', port));

@@ -75,7 +75,7 @@ function Home() {
 
   useEffect(() => {
     const objectsToAnimateParent = document.querySelector(".toAnimateParent");
-    // console.log(objectsToAnimate.forEach(animateObject =>{console.log(animateObject)}))
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -105,12 +105,6 @@ function Home() {
 
   const handleJoinRoom = useCallback(
     (username, roomNum, roomPassword) => {
-      console.log(
-        "Sending join room request now from",
-        username,
-        "to room",
-        roomNum
-      );
       socket.emit("join-req", {
         from: username,
         room: roomNum,
@@ -122,17 +116,15 @@ function Home() {
 
   const handleJoiningRoom = useCallback(
     (data) => {
-      console.log("Joining room", data.roomNum);
-      console.log(data);
       dispatch(createRoom({ roomData: {
         roomNum: data.roomNum,
         roomPass: data.roomPass
       } }));
-      dispatch(setUserData({
-        userData : {
+      dispatch(setUserData({ userData :{
         username: data.email,
         socketId: data.socketId
-      }}))
+      }  
+      }))
       navigate(`/room/${data.roomNum}`);
     },
     [navigate, dispatch]
@@ -140,19 +132,14 @@ function Home() {
 
   useEffect(() => {
     socket.on("room-created", () => {
-      console.log("Room created ");
     });
     socket.on("error", ({msg}) => {
       setError(msg)
     });
-    socket.on("connect", () => console.log("Socket connected:", socket.id));
-    socket.on("disconnect", () => console.log("Socket disconnected"));
     socket.on("joining-room", handleJoiningRoom);
 
     return () => {
       socket.off("room-created");
-      socket.off("connect");
-      socket.off("disconnect");
       socket.off("joining-room");
       socket.off("error");
      

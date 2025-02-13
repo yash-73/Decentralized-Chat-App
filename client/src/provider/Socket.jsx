@@ -4,9 +4,10 @@ import PropTypes from 'prop-types'
 
 const SocketContext = createContext(null);
 
+const appUrl = import.meta.env.VITE_APP_URL;
 
 export const SocketProvider = (props)=>{
-        const socket = useMemo(()=> io('https://10.201.27.81:8000'), [])
+        const socket = useMemo(()=> io(appUrl), [])
 
         return (
             <SocketContext.Provider value={socket}>

@@ -20,11 +20,6 @@ function JoinRoom({className, handleJoinRoom}) {
       }
 
       handleJoinRoom(username, roomNum, roomPassword);
-      
-      console.log({
-          username,
-          roomNum, roomPassword
-      });
     }
 
     useEffect(()=>{

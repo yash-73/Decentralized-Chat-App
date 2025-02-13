@@ -14,7 +14,10 @@ function FileBox({
   sendStatus,
   downloadStatus,
   remoteEmail,
-  removeFile
+  stopUpload,
+  stopDownload,
+  removeUploadingFile,
+  removeReceivingFile
 }) {
   const displayName = (name) => {
     if (name.length > 50) {
@@ -51,10 +54,10 @@ function FileBox({
       className={`${className} flex flex-col items-center justify-center px-4 relative `}
     >  <FaAngleDown 
     onClick={()=>{setClosed(false)}}
-     className={`${closed ? "" : 'hidden'}  absolute top-0 right-0 m-2 z-20 text-[20px] cursor-pointer text-white`}/>
+     className={`${closed ? "" : 'hidden'}  ${(downloadStatus==="Download" && sendStatus==="Send" ? "hidden" : "")}  absolute top-0 right-0 m-2 z-20 text-[20px] cursor-pointer text-white`}/>
     <FaAngleUp 
     onClick={()=>{setClosed(true)}}
-    className={`${closed ? "hidden" : ''} absolute top-0 right-0 m-2 z-20 text-[20px] cursor-pointer text-white`}/>
+    className={`${closed  ? "hidden" : ''}  ${(downloadStatus==="Download" && sendStatus==="Send" ? "hidden" : "")} absolute top-0 right-0 m-2 z-20 text-[20px] cursor-pointer text-white`}/>
     
       {files && (
         <div className={`${closed ? "scale-y-[0]" : "scale-100" } duration-150 absolute top-0 w-full flex flex-col border-2 border-gray-400 bg-black/35 backdrop-blur-lg z-10 justify-between items-center overflow-y-hidden`}>
@@ -77,12 +80,15 @@ function FileBox({
             {sendStatus}
           </button>
 
-          <button onClick={removeFile} className= "border-[1px] border-gray-400 px-4 py-2 m-4 bg-red-500  hover:bg-red-700 duration-100 p-2 rounded-lg">Cancel</button></div>
+          <button onClick={()=>{
+            stopUpload();
+            removeReceivingFile();
+          }} className= "border-[1px] border-gray-400 px-4 py-2 m-4 bg-red-500  hover:bg-red-700 duration-100 p-2 rounded-lg">Cancel</button></div>
         </div>
       )}
 
-      {receivingFile && (
-        <div className={`${closed ? "scale-y-[0]" : "scale-100" } duration-150 absolute top-0 w-full flex flex-col border-2 border-gray-400 bg-black/35 backdrop-blur-lg z-10 justify-between items-center overflow-y-hidden`}>
+{receivingFile && downloadStatus == "Download" && (
+        <div className={`${closed ? "scale-y-[0]" : "scale-y-100" }  duration-150 absolute top-0 w-full flex flex-col border-2 border-gray-400 bg-black/35 backdrop-blur-lg z-10 justify-between items-center overflow-y-hidden`}>
           
           <p>Sent from {remoteEmail}</p>
           
@@ -105,12 +111,27 @@ function FileBox({
           </button>
 
           <button
-          onClick={()=>{removeFile()}}
+          onClick={()=>{
+            removeUploadingFile();
+            stopDownload()
+          }}
            className= "border-[1px] border-gray-400 px-4 py-2 m-4 bg-red-500  hover:bg-red-700 duration-100 p-2 rounded-lg">Cancel</button>
         </div>
       )}
-    </div>
+
+      {
+        receivingFile && downloadStatus == "Downloading..." && 
+          <div className= " bg-black/55 backdrop-blur-lg absolute top-0 w-full py-4 items-center flex flex-col justify-center">
+             {fileProgress > 0 && <progress className="text-blue-400 bg-white rounded-xl w-[50%] h-[10px]" value={fileProgress} max="100" />}
+          </div>
+          
+        
+      }
+      </div>
+    
+    
   );
+  
 }
 
 FileBox.propTypes = {
@@ -129,7 +150,10 @@ FileBox.propTypes = {
   sendStatus: PropTypes.string,
   downloadStatus: PropTypes.string,
   remoteEmail: PropTypes.string,
-  removeFile: PropTypes.func,
+  stopUpload: PropTypes.func,
+  stopDownload: PropTypes.func,
+  removeReceivingFile: PropTypes.func,
+  removeUploadingFile: PropTypes.func,
 };
 
 export default FileBox;
