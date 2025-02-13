@@ -141,6 +141,52 @@ io.on('connection', (socket) => {
     io.to(to).emit('stop-upload', {}  )
   })
 
+  socket.on('reconnect-user', async({from, oldSocketId, roomNum, roomPass})=>{
+    try{
+      const room = await Room.findOne({roomNum, roomPass})
+
+      if(!room) {
+        io.to(socket.id).emit('reconnect-failed', {msg: "Room not found"});
+        return;
+      }
+
+      let member = await Member.findOne({socketId: oldSocketId})
+
+      if (!member){
+        member = await Member.create({ username: from, socketId: socket.id})
+      }
+
+      let userIndex = room.members.findIndex(member=> member.socketId == oldSocketId)
+
+      if(userIndex != -1){
+        room.members[userIndex] = socket.id;
+        await room.save()
+        io.to(roomNum).emit('user-joined', { email: from, socketId: socket.id });
+        console.log(socket.id, " : ", from);
+        socket.join(roomNum)
+        io.to(socket.id).emit('reconnect-success', {username: from , socketId: socket.id, roomNum: roomNum , roomPass: roomPass});
+      }
+      else{
+
+        if(room.members.length < 2){
+          room.members.push({ username, socketId: socket.id });
+          await room.save();
+          io.to(roomNum).emit('user-joined', { email: from, socketId: socket.id });
+          socket.join(roomNum);
+          io.to(socket.id).emit('reconnect-success', {username: from , socketId: socket.id, roomNum: roomNum , roomPass: roomPass})
+        }
+        else {
+          socket.emit("reconnect-failed", "Room is full. Cannot join.");
+      }
+      }
+    }
+    catch(error){
+      console.log("Error: ", error);
+      io.to(socket.id).emit('reconnect-failed', {msg: "Server error"})
+    }
+
+  })
+
   socket.on('disconnect', async () => {
     try {
       const room = await Room.findOne({ 'members.socketId': socket.id });
@@ -164,7 +210,7 @@ io.on('connection', (socket) => {
         }
       }
       console.log(`Disconnected: ${socket.id}`);
-      io.to(room).emit("Error", {msg: "Other user left"})
+      io.to(room.roomNum).emit("user-left", {name:"User", socketId: socket.id})
       // socketToEmailMap.delete(socket.id);
       await Member.findOneAndDelete({socketId: socket.id});
     } catch (error) {

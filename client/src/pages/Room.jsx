@@ -10,7 +10,10 @@ import ChatBox from "../components/ChatBox";
 import "./Room.css";
 import FileBox from "../components/FileBox";
 import {encode, decode} from 'base64-arraybuffer'
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { setUserData, resetUser } from "../store/userSlice";
+import { createRoom, deleteRoom } from "../store/roomSlice";
 
 function Room() {
   const CHUNK_SIZE = 16 * 1024;
@@ -41,6 +44,10 @@ function Room() {
 
   const roomData = useSelector((state)=> state.room.roomData);
   const userData = useSelector((state)=>state.user.userData);
+
+  const dispatch = useDispatch()
+
+  const navigate = useNavigate();
 
   useEffect(()=>{
     if (roomData){
@@ -437,6 +444,22 @@ const downloadFile = useCallback(()=>{
    
   }, [myStream, remoteStream]);
 
+  const handleReconnectSuccess = useCallback(({username, socketId, roomNum, roomPass})=>{
+            dispatch(setUserData({
+              userData: {
+                username: username,
+                socketId: socketId
+              }
+            }))
+
+            dispatch(createRoom({
+              roomData: {
+                roomNum: roomNum,
+                roomPass: roomPass
+              }
+            }))
+  },[dispatch])
+
   useEffect(() => {
     peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
     peer.peer.ondatachannel = (event) => {
@@ -514,7 +537,17 @@ const downloadFile = useCallback(()=>{
     socket.on('user-left', ({name, socketId})=>{
       alert("User: ", name , " : ", socketId, " left");
       setRemoteSocketId(null);
+      setRemoteEmail(null);
     })
+
+    socket.on('reconnect-failed', ({msg})=>{
+      alert("Error: ", msg);
+      dispatch(deleteRoom());
+      dispatch(resetUser())
+      navigate("/")
+    })
+
+    socket.on('reconnect-success', handleReconnectSuccess)
 
     return () => {
       socket.off("user-joined");
@@ -528,9 +561,12 @@ const downloadFile = useCallback(()=>{
       socket.off("end-call");
       socket.off('stop-download')
       socket.off('stop-upload')
+      socket.off('user-left')
+      socket.off('reconnect-failed')
+      socket.off('reconnect-success')
     };
-  }, [
-    socket,
+
+  }, [socket,
     handleNewUserJoined,
     handleIncomingCall,
     handleCallAccept,
@@ -540,6 +576,9 @@ const downloadFile = useCallback(()=>{
     sendStreams,
     remoteSocketId,
     endCall,
+    navigate,
+    handleReconnectSuccess,
+    dispatch
   ]);
 
 
@@ -568,12 +607,12 @@ const downloadFile = useCallback(()=>{
             className="bg-green-600 font-semibold hover:bg-green-700 transition-all delay-75 px-2 py-1 rounded-md  text-white  shadow-md"
             onClick={(e)=>{
               e.preventDefault()
-              
-                const from = JSON.parse(localStorage.getItem("userData"))
-                const room = JSON.parse(localStorage.getItem("roomData"))
-                const roomPass = JSON.parse(localStorage.getItem("roomData"))
-                console.log(from , room)
-                socket.emit('reconnect-user', ({from:from , room: room , roomPass: roomPass}));
+                const oldSocketId = JSON.parse(localStorage.getItem('userData')).socketId
+                const from = JSON.parse(localStorage.getItem("userData")).username
+                const roomNum = JSON.parse(localStorage.getItem("roomData")).roomNum
+                const roomPass = JSON.parse(localStorage.getItem("roomData")).roomPass
+                // console.log(from , roomNum)
+                socket.emit('reconnect-user', ({from:from , oldSocketId: oldSocketId ,roomNum: roomNum , roomPass: roomPass}));
             }}
             >Reconnect</button>}
 
