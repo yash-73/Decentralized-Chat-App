@@ -1,33 +1,28 @@
-const express = require('express');
-require('dotenv').config();
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
-const { Server } = require('socket.io');
-const http = require('http');
-// const https = require("https");
-// const fs = require("fs");
-const cors = require('cors');
-
-// const options = {
-//     key: fs.readFileSync("server.key"),
-//     cert: fs.readFileSync("server.cert"),
-//   };
-
+const express = require("express");
+require("dotenv").config();
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+const { Server } = require("socket.io");
+const http = require("http");
+const cors = require("cors");
 
 const app = express();
-const server = http.createServer(app)
-const front_end_url = process.env.FRONT_END_URL;
-const io = new Server(server, { cors: { origin:front_end_url } });
-app.use(cors)
-const start = process.env.DB_START
-const end = process.env.DB_END
-const db_username = process.env.MONGO_CLUSTER_USERNAME
-const db_password = process.env.MONGO_CLUSTER_PASSWORD;
-mongoose
-  .connect(`${start}${db_username}:${db_password}@${end}`)
-  .then(() => console.log('Database connected'))
-  .catch((err) => console.log('Error:', err));
+const server = http.createServer(app);
 
+const front_end_url = process.env.FRONT_END_URL;
+const io = new Server(server, { cors: { origin: front_end_url } });
+
+// ✅ Fix CORS middleware
+app.use(cors());
+app.use(bodyParser.json());
+
+// ✅ Use a single DB_URL
+const dbUrl = process.env.DB_URL;
+
+mongoose
+  .connect(dbUrl)
+  .then(() => console.log("Database connected"))
+  .catch((err) => console.log("Error:", err));
 
 const roomSchema = new mongoose.Schema({
   roomNum: { type: Number, required: true, unique: true },
@@ -36,14 +31,12 @@ const roomSchema = new mongoose.Schema({
 });
 
 const memberSchema = new mongoose.Schema({
-  username: {type: String, required: true},
-  socketId: {type: String, required: true, unique: true}
-})
+  username: { type: String, required: true },
+  socketId: { type: String, required: true, unique: true },
+});
 
 const Member = mongoose.model("Member", memberSchema);
-const Room = mongoose.model('Room', roomSchema);
-
-app.use(bodyParser.json());
+const Room = mongoose.model("Room", roomSchema);
 
 io.on('connection', (socket) => {
   console.log('New connection:', socket.id);
@@ -181,5 +174,5 @@ io.on('connection', (socket) => {
 });
 
 
-const port = process.env.BACK_END_PORT
-server.listen(port, () => console.log('Server running on port ', port));
+const port = process.env.PORT || 8000;
+server.listen(port, () => console.log(`Server running on port ${port}`));
