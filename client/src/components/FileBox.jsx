@@ -60,22 +60,24 @@ function FileBox({
     className={`${closed  ? "hidden" : ''}  ${(downloadStatus==="Download" && sendStatus==="Send" ? "hidden" : "")} absolute top-0 right-0 m-2 z-20 text-[20px] cursor-pointer text-white`}/>
     
       {files && (
-        <div className={`${closed ? "scale-y-[0]" : "scale-100" } duration-150 absolute top-0 w-full flex flex-col border-2 border-gray-400 bg-black/35 backdrop-blur-lg z-10 justify-between items-center overflow-y-hidden`}>
+        <div className={`${closed ? "scale-y-[0]" : "scale-100" } duration-200 absolute top-0 w-[calc(100%-2rem)] left-4 flex flex-col border border-gray-700/50 bg-black/60 backdrop-blur-xl z-10 justify-between items-center overflow-y-hidden rounded-2xl shadow-2xl py-4 mt-2`}>
 
         
-            <div className="border-2 border-gray-400 flex flex-col justify-center items-center p-4 m-4">
-              <MdOutlineAttachFile className="text-4xl text-gray-300" />
+            <div className="border border-gray-600/50 bg-white/5 rounded-2xl flex flex-col justify-center items-center p-6 m-4 shadow-inner">
+              <MdOutlineAttachFile className="text-5xl text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.5)] mb-2" />
             </div>
-            <p>{displayName(files.name)}</p>
-            <p>{displaySize(files.size)}</p>
-            {fileProgress > 0 && <progress value={fileProgress} max="100" />}
+            <p className="font-semibold text-gray-200 text-center px-4">{displayName(files.name)}</p>
+            <p className="text-sm text-gray-400 mt-1">{displaySize(files.size)}</p>
+            {fileProgress > 0 && <div className="w-[80%] mt-4 bg-gray-800 rounded-full h-2.5 overflow-hidden border border-gray-700">
+               <div className="bg-gradient-to-r from-teal-400 to-blue-500 h-2.5 rounded-full transition-all duration-300" style={{ width: `${fileProgress}%` }}></div>
+            </div>}
   
 
-<div className="flex flex-row">
+<div className="flex flex-row mt-4 gap-4">
           <button
             onClick={handleSendFileButton}
             disabled={sendStatus != "Send"}
-            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 m-4 hover:bg-green-700 bg-green-600 cursor-pointer transition-all delay-75"
+            className="bg-teal-600/90 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed border border-teal-500/50 rounded-xl px-5 py-2 text-white font-medium shadow-[0_0_15px_rgba(13,148,136,0.4)] transition-all"
           >
             {sendStatus}
           </button>
@@ -83,29 +85,30 @@ function FileBox({
           <button onClick={()=>{
             stopUpload();
             removeReceivingFile();
-          }} className= "border-[1px] border-gray-400 px-4 py-2 m-4 bg-red-500  hover:bg-red-700 duration-100 p-2 rounded-lg">Cancel</button></div>
+          }} className= "bg-red-500/80 hover:bg-red-500 border border-red-500/50 text-white px-5 py-2 rounded-xl transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)]">Cancel</button></div>
         </div>
       )}
 
 {receivingFile && downloadStatus == "Download" && (
-        <div className={`${closed ? "scale-y-[0]" : "scale-y-100" }  duration-150 absolute top-0 w-full flex flex-col border-2 border-gray-400 bg-black/35 backdrop-blur-lg z-10 justify-between items-center overflow-y-hidden`}>
+        <div className={`${closed ? "scale-y-[0]" : "scale-y-100" } duration-200 absolute top-0 w-[calc(100%-2rem)] left-4 flex flex-col border border-gray-700/50 bg-black/60 backdrop-blur-xl z-10 justify-between items-center overflow-y-hidden rounded-2xl shadow-2xl py-4 mt-2`}>
           
-          <p>Sent from {remoteEmail}</p>
+          <p className="text-sm font-medium text-teal-400 mb-2">Incoming from {remoteEmail}</p>
           
-            <div className="border-2 border-gray-400 flex flex-row justify-center items-center p-4 m-4">
-            
-              <MdOutlineAttachFile className="text-4xl text-gray-300" />
+            <div className="border border-gray-600/50 bg-white/5 rounded-2xl flex flex-col justify-center items-center p-6 m-2 shadow-inner">
+              <MdOutlineAttachFile className="text-5xl text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)] mb-2" />
             </div>
-            <p>{displayName(receivingFile.name.toString())}</p>
-            <p>{displaySize(receivingFile.size)}</p>
+            <p className="font-semibold text-gray-200 text-center px-4">{displayName(receivingFile.name.toString())}</p>
+            <p className="text-sm text-gray-400 mt-1">{displaySize(receivingFile.size)}</p>
             
-            {fileProgress > 0 && <progress value={fileProgress} max="100" />}
+            {fileProgress > 0 && <div className="w-[80%] mt-4 bg-gray-800 rounded-full h-2.5 overflow-hidden border border-gray-700">
+               <div className="bg-gradient-to-r from-teal-400 to-blue-500 h-2.5 rounded-full transition-all duration-300" style={{ width: `${fileProgress}%` }}></div>
+            </div>}
           
-
+<div className="flex flex-row mt-4 gap-4">
           <button
             onClick={sendDownloadRequest}
             disabled={downloadStatus != "Download"}
-            className="border-[1px] border-gray-400 rounded-lg px-4 py-2 my-4 hover:bg-green-700 bg-green-600 cursor-pointer transition-all delay-75"
+            className="bg-blue-600/90 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed border border-blue-500/50 rounded-xl px-5 py-2 text-white font-medium shadow-[0_0_15px_rgba(59,130,246,0.4)] transition-all"
           >
             {downloadStatus}
           </button>
@@ -115,17 +118,18 @@ function FileBox({
             removeUploadingFile();
             stopDownload()
           }}
-           className= "border-[1px] border-gray-400 px-4 py-2 m-4 bg-red-500  hover:bg-red-700 duration-100 p-2 rounded-lg">Cancel</button>
+           className= "bg-red-500/80 hover:bg-red-500 border border-red-500/50 text-white px-5 py-2 rounded-xl transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)]">Cancel</button></div>
         </div>
       )}
 
       {
         receivingFile && downloadStatus == "Downloading..." && 
-          <div className= " bg-black/55 backdrop-blur-lg absolute top-0 w-full py-4 items-center flex flex-col justify-center">
-             {fileProgress > 0 && <progress className="text-blue-400 bg-white rounded-xl w-[50%] h-[10px]" value={fileProgress} max="100" />}
+          <div className= "bg-black/60 backdrop-blur-xl border border-gray-700/50 shadow-lg rounded-2xl absolute top-4 w-[calc(100%-2rem)] left-4 py-6 items-center flex flex-col justify-center z-20">
+             <p className="text-blue-400 font-medium mb-3">Downloading file...</p>
+             {fileProgress > 0 && <div className="w-[80%] bg-gray-800 rounded-full h-2.5 overflow-hidden border border-gray-700">
+               <div className="bg-gradient-to-r from-teal-400 to-blue-500 h-2.5 rounded-full transition-all duration-100" style={{ width: `${fileProgress}%` }}></div>
+            </div>}
           </div>
-          
-        
       }
       </div>
     

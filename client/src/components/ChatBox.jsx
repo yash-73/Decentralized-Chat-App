@@ -15,7 +15,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
       {/* Message History */}
       <div
         id="message-history"
-        className="flex flex-col w-full max-md:h-[60vh] md:h-[60vh] overflow-y-scroll scroll-smooth bg-[#111111] p-2"
+        className="flex flex-col w-full max-md:h-[50vh] h-[55vh] overflow-y-scroll scroll-smooth bg-black/20 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-4 mb-4"
       >
         {messages.map((message, index) => (
           <Messages
@@ -30,46 +30,49 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
       {/* Input Section */}
       <form
         id="message-box"
-        className="w-full flex flex-col justify-between px-4  rounded-2xl border-b-0 border-x-0 border-[1px] border-gray-400"
+        className="w-full flex flex-col justify-between bg-black/30 backdrop-blur-md rounded-2xl border border-gray-700/50 p-2"
         onSubmit={sendMessage}
       >
-        <textarea
-          id="type-message"
-          placeholder="Message"
-          autoComplete="off"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault(); 
-              sendMessage(e);
-            } else if (e.key === "Enter" && e.shiftKey) {
-              setText((prev) => prev + "\n");
-            }
-          }}
-          className="w-full my-4 px-2 h-[100px] text-start overflow-y-auto rounded resize-none bg-[#111111] text-white"
-        ></textarea>
+          <div className="flex flex-row items-center bg-black/20 rounded-xl border border-gray-700/50 pr-2 overflow-hidden focus-within:border-teal-500/50 focus-within:ring-1 focus-within:ring-teal-500/20 transition-all">
+          <textarea
+            id="type-message"
+            placeholder="Type a message..."
+            autoComplete="off"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault(); 
+                sendMessage(e);
+              } else if (e.key === "Enter" && e.shiftKey) {
+                setText((prev) => prev + "\n");
+              }
+            }}
+            className="w-full p-4 h-[60px] text-start overflow-y-auto resize-none bg-transparent text-white outline-none placeholder-gray-500"
+          ></textarea>
 
-        <div className="flex flex-row justify-between rounded-xl">
-          <div className="text-center items-center flex flex-col justify-center rounded-full hover:bg-gray-800 transition-all delay-75">
-            <input
-              className="hidden"
-              id="file"
-              type="file"
-              onChange={handleFileChange}
-            />
-            <label htmlFor="file">
-              <MdOutlineAttachFile className="text-white mx-2 cursor-pointer text-3xl" />
-            </label>
+          <div className="flex items-center gap-2">
+            <div className="text-center items-center flex flex-col justify-center rounded-full hover:bg-gray-700/50 transition-all delay-75 p-2">
+              <input
+                className="hidden"
+                id="file"
+                type="file"
+                onChange={handleFileChange}
+              />
+              <label htmlFor="file" title="Attach file">
+                <MdOutlineAttachFile className="text-gray-400 hover:text-white cursor-pointer text-2xl transition-colors" />
+              </label>
+            </div>
+
+            <button
+              id="send-message"
+              type="submit"
+              disabled={text.trim().length === 0}
+              className="bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 shadow-[0_0_15px_rgba(20,184,166,0.3)] hover:shadow-[0_0_20px_rgba(20,184,166,0.5)]"
+            >
+              Send
+            </button>
           </div>
-
-          <button
-            id="send-message"
-            type="submit"
-            className="bg-green-600 hover:bg-green-700 text-gray-100 font-semibold h-fit self-center py-3 px-4 rounded-lg"
-          >
-            Send
-          </button>
         </div>
       </form>
     </div>
