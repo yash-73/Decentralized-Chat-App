@@ -9,7 +9,7 @@ import VideoCallButtons from "../components/VideoCallButtons";
 import ChatBox from "../components/ChatBox";
 import "./Room.css";
 import FileBox from "../components/FileBox";
-import {encode, decode} from 'base64-arraybuffer'
+import { encode, decode } from 'base64-arraybuffer'
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { setUserData, resetUser } from "../store/userSlice";
@@ -37,26 +37,26 @@ function Room() {
   const [sendStatus, setSendStatus] = useState("Send");
   const [downloadStatus, setDownloadStatus] = useState("Download");
   const [link, setLink] = useState(null)
-  const[cancelDownload, setCancelDownload] = useState(false);
- 
+  const [cancelDownload, setCancelDownload] = useState(false);
+
   const dataChannel = useRef();
   const fileChannel = useRef();
 
-  const roomData = useSelector((state)=> state.room.roomData);
-  const userData = useSelector((state)=>state.user.userData);
+  const roomData = useSelector((state) => state.room.roomData);
+  const userData = useSelector((state) => state.user.userData);
 
   const dispatch = useDispatch()
 
   const navigate = useNavigate();
 
-  useEffect(()=>{
-    if (roomData){
-          localStorage.setItem("roomData", JSON.stringify(roomData));
+  useEffect(() => {
+    if (roomData) {
+      localStorage.setItem("roomData", JSON.stringify(roomData));
     }
-    if(userData){
+    if (userData) {
       localStorage.setItem("userData", JSON.stringify(userData))
     }
-  },[roomData, userData])
+  }, [roomData, userData])
 
   const handleIncomingMessage = useCallback((e) => {
     const msg = JSON.parse(e.data);
@@ -79,7 +79,7 @@ function Room() {
 
         reader.onload = () => {
 
-          if(cancelDownload) {
+          if (cancelDownload) {
             setSendStatus("Send");
             setFileProgress(0)
             return;
@@ -100,14 +100,14 @@ function Room() {
             fileChannel.current.bufferedAmountLowThreshold
           ) {
             fileChannel.current.onbufferedamountlow = () => {
-             
+
               fileChannel.current.send(chunkData);
-              setFileProgress((chunkIndex+1/totalChunks) * 100)
+              setFileProgress((chunkIndex + 1 / totalChunks) * 100)
               fileChannel.current.onbufferedamountlow = null;
               proceedToNextChunk();
             };
           } else {
-            
+
             fileChannel.current.send(chunkData);
             proceedToNextChunk();
           }
@@ -134,24 +134,24 @@ function Room() {
     }
   }, [files, CHUNK_SIZE, cancelDownload]);
 
-const assembleAndDownloadFile =useCallback(async (receivingFile) => {
+  const assembleAndDownloadFile = useCallback(async (receivingFile) => {
 
-  try {
+    try {
       const missingChunks = receivingFile.chunks.findIndex(chunk => !chunk);
       if (missingChunks !== -1) {
-          throw new Error(`Missing chunk at index ${missingChunks}`);   
+        throw new Error(`Missing chunk at index ${missingChunks}`);
       }
       let totalSize = 0;
       receivingFile.chunks.forEach((chunk) => {
-          if (chunk) totalSize += chunk.length;
+        if (chunk) totalSize += chunk.length;
       });
       const finalArray = new Uint8Array(totalSize);
       let offset = 0;
       receivingFile.chunks.forEach((chunk) => {
-          if (chunk) {
-              finalArray.set(chunk, offset);
-              offset += chunk.length;
-          }
+        if (chunk) {
+          finalArray.set(chunk, offset);
+          offset += chunk.length;
+        }
       });
       const fileBlob = new Blob([finalArray], { type: receivingFile.type });
       const downloadUrl = URL.createObjectURL(fileBlob);
@@ -159,77 +159,77 @@ const assembleAndDownloadFile =useCallback(async (receivingFile) => {
       link1.href = downloadUrl;
       link1.download = receivingFile.name;
       setLink(link1)
-  } catch (error) {
+    } catch (error) {
       console.error("Error assembling file:", error);
       alert("Error assembling file: " + error.message);
       setReceivingFile(null);
       setFileProgress(0);
       setDownloadStatus("Download");
-  }
-},[]);
-
-const handleIncomingFile = useCallback(
-  async (event) => {
-    const fileData = JSON.parse(event.data);
-
-    if (fileData.type === "file-start") {
-      
-      setReceivingFile({
-        name: fileData.fileName,
-        size: fileData.fileSize,
-        type: fileData.fileType,
-        chunks: new Array(Math.ceil(fileData.fileSize / CHUNK_SIZE)),
-        receivedChunks: 0,
-        totalChunks: Math.ceil(fileData.fileSize / CHUNK_SIZE),
-        isComplete: false
-      });
-    } 
-    else if (fileData.type == "start-download") {
-      setSendStatus("Sending...");
-      await sendFile();
     }
-    else if (fileData.type === "file-chunk") {
-      setReceivingFile((prev) => {
-        if (!prev) return prev;
+  }, []);
 
-        const chunkArray = new Uint8Array(decode(fileData.chunk));
-        const newChunks = [...prev.chunks];
-        newChunks[fileData.chunkIndex] = chunkArray;
+  const handleIncomingFile = useCallback(
+    async (event) => {
+      const fileData = JSON.parse(event.data);
 
-        const newReceivedChunks = prev.receivedChunks + 1;
-        const isComplete = newReceivedChunks === prev.totalChunks;
-        setFileProgress((newReceivedChunks / prev.totalChunks) * 100);
+      if (fileData.type === "file-start") {
 
-        return {
-          ...prev,
-          chunks: newChunks,
-          receivedChunks: newReceivedChunks,
-          isComplete
-        };
-      });
-    }
-    else if (fileData.type === "file-end") {
-      setReceivingFile((prev) => {
-        if (!prev) return prev;
-        if (prev.isComplete) {
-          assembleAndDownloadFile(prev);
-          return null;
-        }
-        return prev;
-      });
-    }
-  },
-  [sendFile, CHUNK_SIZE, assembleAndDownloadFile]
-);
+        setReceivingFile({
+          name: fileData.fileName,
+          size: fileData.fileSize,
+          type: fileData.fileType,
+          chunks: new Array(Math.ceil(fileData.fileSize / CHUNK_SIZE)),
+          receivedChunks: 0,
+          totalChunks: Math.ceil(fileData.fileSize / CHUNK_SIZE),
+          isComplete: false
+        });
+      }
+      else if (fileData.type == "start-download") {
+        setSendStatus("Sending...");
+        await sendFile();
+      }
+      else if (fileData.type === "file-chunk") {
+        setReceivingFile((prev) => {
+          if (!prev) return prev;
+
+          const chunkArray = new Uint8Array(decode(fileData.chunk));
+          const newChunks = [...prev.chunks];
+          newChunks[fileData.chunkIndex] = chunkArray;
+
+          const newReceivedChunks = prev.receivedChunks + 1;
+          const isComplete = newReceivedChunks === prev.totalChunks;
+          setFileProgress((newReceivedChunks / prev.totalChunks) * 100);
+
+          return {
+            ...prev,
+            chunks: newChunks,
+            receivedChunks: newReceivedChunks,
+            isComplete
+          };
+        });
+      }
+      else if (fileData.type === "file-end") {
+        setReceivingFile((prev) => {
+          if (!prev) return prev;
+          if (prev.isComplete) {
+            assembleAndDownloadFile(prev);
+            return null;
+          }
+          return prev;
+        });
+      }
+    },
+    [sendFile, CHUNK_SIZE, assembleAndDownloadFile]
+  );
 
 
-const downloadFile = useCallback(()=>{
-      link.click();
-      setReceivingFile(null);
-      setFileProgress(0);
-      setDownloadStatus("Download");
-      setLink(null);
-},[link])
+  const downloadFile = useCallback(() => {
+    link.click();
+    setReceivingFile(null);
+    setFileProgress(0);
+    setDownloadStatus("Download");
+    setLink(null);
+  }, [link])
 
 
   const handleSendFileButton = (e) => {
@@ -257,7 +257,7 @@ const downloadFile = useCallback(()=>{
 
   const handleNewUserJoined = useCallback(
     async (data) => {
-      setTimeout(async ()=>{
+      setTimeout(async () => {
         const { email, socketId } = data;
         setRemoteSocketId(socketId);
         setRemoteEmail(email);
@@ -282,7 +282,7 @@ const downloadFile = useCallback(()=>{
 
   const handleCallAccept = useCallback(
     async ({ ans }) => {
-      
+
       await peer.setAnswer(ans);
       dataChannel.current = peer.peer.createDataChannel("myDataChannel");
       fileChannel.current = peer.peer.createDataChannel("fileChannel");
@@ -296,7 +296,7 @@ const downloadFile = useCallback(()=>{
 
   const handleNegoNeeded = useCallback(async () => {
     // Ensure this peer is the one initiating the negotiation
-    if(peer.peer.connectionState == "stable") return;
+    if (peer.peer.connectionState == "stable") return;
     if (negotiated) return;
     try {
       const offer = await peer.getOffer();
@@ -319,12 +319,12 @@ const downloadFile = useCallback(()=>{
   );
 
   const handleNegoDone = useCallback(
-    async ({  ans }) => {
+    async ({ ans }) => {
       await peer.setAnswer(ans);
       setNegotiated(true);
-      if(peer.peer.connectionState == "stable") return;
+      if (peer.peer.connectionState == "stable") return;
       socket.emit("second-nego", { to: remoteSocketId });
-      
+
     },
     [socket, remoteSocketId]
   );
@@ -332,21 +332,21 @@ const downloadFile = useCallback(()=>{
   const sendStreams = useCallback(async () => {
     const screenWidth = document.documentElement.clientWidth;
 
-    const videoConstraintsPC =  {
-      width: { ideal: 1280, min: 640, max: 1920 }, 
-      height: { ideal: 720, min: 480, max: 1080 }, 
-      frameRate: { ideal: 30, max: 60 } 
+    const videoConstraintsPC = {
+      width: { ideal: 1280, min: 640, max: 1920 },
+      height: { ideal: 720, min: 480, max: 1080 },
+      frameRate: { ideal: 30, max: 60 }
     }
 
     const videoContraintsMobile = {
-      width: { ideal: 720, min: 480, max: 1080},
-      height: {ideal: 1280, min: 640, max: 1920 },
-      frameRate : {ideal: 30, max: 60} 
+      width: { ideal: 720, min: 480, max: 1080 },
+      height: { ideal: 1280, min: 640, max: 1920 },
+      frameRate: { ideal: 30, max: 60 }
     }
 
     let constraints = videoConstraintsPC;
-    if (screenWidth < 600){
-        constraints = videoContraintsMobile;
+    if (screenWidth < 600) {
+      constraints = videoContraintsMobile;
     }
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
@@ -377,7 +377,7 @@ const downloadFile = useCallback(()=>{
     e.preventDefault();
     if (!remoteSocketId) return;
     if (text.length == 0) return;
-    try{
+    try {
       dataChannel.current.send(JSON.stringify({ type: "text", value: text }));
       setMessages((messages) => [
         ...messages,
@@ -385,11 +385,11 @@ const downloadFile = useCallback(()=>{
       ]);
       setText("");
     }
-    catch (err){
+    catch (err) {
       alert("Could not send message");
       console.log("Error: ", err)
     }
-    
+
   };
 
   const handleFileChange = (event) => {
@@ -402,24 +402,24 @@ const downloadFile = useCallback(()=>{
   };
 
 
-  const stopDownload = useCallback(()=>{
+  const stopDownload = useCallback(() => {
     setCancelDownload(true);
-    socket.emit("stop-download", {to : remoteSocketId})
-  },[socket, remoteSocketId])
+    socket.emit("stop-download", { to: remoteSocketId })
+  }, [socket, remoteSocketId])
 
-  const stopUpload = useCallback(()=>{
-    socket.emit("stop-upload", {to: remoteSocketId})
-  },[socket, remoteSocketId])
+  const stopUpload = useCallback(() => {
+    socket.emit("stop-upload", { to: remoteSocketId })
+  }, [socket, remoteSocketId])
 
 
-  const removeReceivingFile = ()=>{
+  const removeReceivingFile = () => {
     setCancelDownload(false);
     setFiles(null);
     setSendStatus("Send");
     setFileProgress(0);
   }
 
-  const removeUploadingFile = ()=>{
+  const removeUploadingFile = () => {
     setReceivingFile(null);
     setDownloadStatus("Download")
     setFileProgress(0);
@@ -441,24 +441,24 @@ const downloadFile = useCallback(()=>{
     setNegotiated(false);
     setInCall(false);
     setIncomingCall(false);
-   
+
   }, [myStream, remoteStream]);
 
-  const handleReconnectSuccess = useCallback(({username, socketId, roomNum, roomPass})=>{
-            dispatch(setUserData({
-              userData: {
-                username: username,
-                socketId: socketId
-              }
-            }))
+  const handleReconnectSuccess = useCallback(({ username, socketId, roomNum, roomPass }) => {
+    dispatch(setUserData({
+      userData: {
+        username: username,
+        socketId: socketId
+      }
+    }))
 
-            dispatch(createRoom({
-              roomData: {
-                roomNum: roomNum,
-                roomPass: roomPass
-              }
-            }))
-  },[dispatch])
+    dispatch(createRoom({
+      roomData: {
+        roomNum: roomNum,
+        roomPass: roomPass
+      }
+    }))
+  }, [dispatch])
 
   useEffect(() => {
     peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
@@ -470,7 +470,7 @@ const downloadFile = useCallback(()=>{
           dataChannel.current.readyState
         );
 
-        if(dataChannel.current.readyState != "open") handleNegoNeeded();
+        if (dataChannel.current.readyState != "open") handleNegoNeeded();
         dataChannel.current.onmessage = handleIncomingMessage;
       } else if (event.channel.label == "fileChannel") {
         fileChannel.current = event.channel;
@@ -478,7 +478,7 @@ const downloadFile = useCallback(()=>{
           "file data channel on other side: ",
           fileChannel.current.readyState
         );
-        if(fileChannel.current.readyState != "open") handleNegoNeeded();
+        if (fileChannel.current.readyState != "open") handleNegoNeeded();
         fileChannel.current.onmessage = handleIncomingFile;
       }
     };
@@ -503,7 +503,7 @@ const downloadFile = useCallback(()=>{
       fileChannel.current.onmessage = handleIncomingFile;
   }, [handleIncomingFile]);
 
-  
+
   useEffect(() => {
     socket.on("user-joined", handleNewUserJoined);
     socket.on("incoming-call", handleIncomingCall);
@@ -524,23 +524,23 @@ const downloadFile = useCallback(()=>{
       setInCall(true);
     });
 
-    socket.on('stop-download', ()=>{
+    socket.on('stop-download', () => {
       alert("User cancelled download");
       removeReceivingFile();
     })
 
-    socket.on('stop-upload', ()=>{
+    socket.on('stop-upload', () => {
       alert("User stopped sharing");
       removeUploadingFile();
     })
 
-    socket.on('user-left', ({name, socketId})=>{
-      alert("User: ", name , " : ", socketId, " left");
+    socket.on('user-left', ({ name, socketId }) => {
+      alert("User: ", name, " : ", socketId, " left");
       setRemoteSocketId(null);
       setRemoteEmail(null);
     })
 
-    socket.on('reconnect-failed', ({msg})=>{
+    socket.on('reconnect-failed', ({ msg }) => {
       alert("Error: ", msg);
       dispatch(deleteRoom());
       dispatch(resetUser())
@@ -582,28 +582,28 @@ const downloadFile = useCallback(()=>{
   ]);
 
 
-    <div className="bg-zinc-950 w-full h-[100vh] overflow-y-scroll flex flex-col items-center text-white py-4 lg:py-8 px-2 transition-colors duration-300">
-      <div className="relative w-full max-w-5xl p-6 flex flex-col bg-zinc-900 border border-zinc-800 my-auto flex-1">
-       
-        <div className="w-full flex flex-row justify-between items-center mb-6 pb-4 border-b border-zinc-800">
-          {roomData && <div className="flex flex-col">
-            <span className="text-xs text-zinc-400 font-bold tracking-wider uppercase mb-1">Room ID</span>
-            <span className="text-2xl font-mono font-bold text-teal-400 tracking-wider bg-zinc-950 px-3 py-1 border border-zinc-800">{roomData.roomNum}</span>
-          </div>}
-          {roomData && <div className="flex flex-col text-right">
-            <span className="text-xs text-zinc-400 font-bold tracking-wider uppercase mb-1">Password</span>
-            <span className="text-xl font-mono text-gray-300 bg-zinc-950 px-3 py-1 border border-zinc-800">{roomData.roomPass}</span>
-          </div>}
-        </div>
+  <div className="bg-zinc-950 w-full h-[100vh] overflow-y-scroll flex flex-col items-center text-white py-4 lg:py-8 px-2 transition-colors duration-300">
+    <div className="relative w-full max-w-5xl p-6 flex flex-col bg-zinc-900 border border-zinc-800 my-auto flex-1">
 
-        {!incomingCall && !inCall &&
-         <div className="mb-6 flex flex-row justify-between items-center bg-zinc-950 p-4 border border-zinc-800">
-            <div className="flex items-center gap-4">
-              <span className={`w-3 h-3 ${remoteSocketId ? 'bg-teal-500' : 'bg-yellow-500 animate-pulse'}`}></span>
-              <span className="font-medium text-gray-200 text-lg">{remoteSocketId ? `Connected to ${remoteEmail}` : `Waiting for someone to join...`}</span>
-            </div>
+      <div className="w-full flex flex-row justify-between items-center mb-6 pb-4 border-b border-zinc-800">
+        {roomData && <div className="flex flex-col">
+          <span className="text-xs text-zinc-400 font-bold tracking-wider uppercase mb-1">Room ID</span>
+          <span className="text-2xl font-mono font-bold text-teal-400 tracking-wider bg-zinc-950 px-3 py-1 border border-zinc-800">{roomData.roomNum}</span>
+        </div>}
+        {roomData && <div className="flex flex-col text-right">
+          <span className="text-xs text-zinc-400 font-bold tracking-wider uppercase mb-1">Password</span>
+          <span className="text-xl font-mono text-gray-300 bg-zinc-950 px-3 py-1 border border-zinc-800">{roomData.roomPass}</span>
+        </div>}
+      </div>
+
+      {!incomingCall && !inCall &&
+        <div className="mb-6 flex flex-row justify-between items-center bg-zinc-950 p-4 border border-zinc-800">
+          <div className="flex items-center gap-4">
+            <span className={`w-3 h-3 ${remoteSocketId ? 'bg-teal-500' : 'bg-yellow-500 animate-pulse'}`}></span>
+            <span className="font-medium text-gray-200 text-lg">{remoteSocketId ? `Connected to ${remoteEmail}` : `Waiting for someone to join...`}</span>
+          </div>
           <div>
-            { remoteSocketId ?  (
+            {remoteSocketId ? (
               <button
                 onClick={callUser}
                 disabled={remoteStream}
@@ -612,94 +612,94 @@ const downloadFile = useCallback(()=>{
                 <FcVideoCall className="text-2xl grayscale group-hover:grayscale-0 transition-all" /> <span className="hidden sm:block">Start Video</span>
               </button>
             ) : <button
-            className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-bold uppercase tracking-wider transition-colors duration-300 px-6 py-2.5"
-            onClick={(e)=>{
-              e.preventDefault()
+              className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-bold uppercase tracking-wider transition-colors duration-300 px-6 py-2.5"
+              onClick={(e) => {
+                e.preventDefault()
                 const oldSocketId = JSON.parse(localStorage.getItem('userData')).socketId
                 const from = JSON.parse(localStorage.getItem("userData")).username
                 const roomNum = JSON.parse(localStorage.getItem("roomData")).roomNum
                 const roomPass = JSON.parse(localStorage.getItem("roomData")).roomPass
-                socket.emit('reconnect-user', ({from:from , oldSocketId: oldSocketId ,roomNum: roomNum , roomPass: roomPass}));
-            }}
+                socket.emit('reconnect-user', ({ from: from, oldSocketId: oldSocketId, roomNum: roomNum, roomPass: roomPass }));
+              }}
             >Reconnect</button>}
 
-            </div>
+          </div>
         </div>}
 
 
-        {incomingCall && (
-          <div className="flex flex-row justify-between items-center bg-zinc-950 border border-teal-500 px-6 py-4 animate-pulse mb-6">
-            <p className="font-semibold text-lg">Incoming video call from <span className="text-teal-400">{remoteEmail}</span></p>
+      {incomingCall && (
+        <div className="flex flex-row justify-between items-center bg-zinc-950 border border-teal-500 px-6 py-4 animate-pulse mb-6">
+          <p className="font-semibold text-lg">Incoming video call from <span className="text-teal-400">{remoteEmail}</span></p>
 
-            <div className="flex gap-4">
+          <div className="flex gap-4">
             <button
               className="bg-teal-500 hover:bg-teal-400 px-6 py-2 text-zinc-950 transition-colors flex items-center justify-center font-bold"
               onClick={handleVideoCall}
             >
               <IoCall className="text-2xl" />
             </button>
-            <button   className="bg-red-500 hover:bg-red-400 px-6 py-2 text-zinc-950 transition-colors flex items-center justify-center font-bold"
-            onClick={()=>{
-              socket.emit('end-call', {to: remoteSocketId});
-              endCall();
-            }}>
-              <MdCallEnd className="text-2xl"/></button></div>
-          </div>
-        )}
+            <button className="bg-red-500 hover:bg-red-400 px-6 py-2 text-zinc-950 transition-colors flex items-center justify-center font-bold"
+              onClick={() => {
+                socket.emit('end-call', { to: remoteSocketId });
+                endCall();
+              }}>
+              <MdCallEnd className="text-2xl" /></button></div>
+        </div>
+      )}
 
-        {inCall && (
-          <div className="flex flex-col justify-between h-full">
-            <VideoCall
-              myStream={myStream}
-              remoteStream={remoteStream}
-              remoteEmail={remoteEmail}
-              
-            />
+      {inCall && (
+        <div className="flex flex-col justify-between h-full">
+          <VideoCall
+            myStream={myStream}
+            remoteStream={remoteStream}
+            remoteEmail={remoteEmail}
 
-            <VideoCallButtons
-              myStream={myStream}
-              remoteSocketId={remoteSocketId}
-              endCall={endCall}
-              
+          />
 
-              />
-              </div>
-            )}
+          <VideoCallButtons
+            myStream={myStream}
+            remoteSocketId={remoteSocketId}
+            endCall={endCall}
+
+
+          />
+        </div>
+      )}
 
       {!inCall &&
-      <FileBox
-        className="w-full"
-        files={files}
-        handleSendFileButton={handleSendFileButton}
-        receivingFile={receivingFile}
-        fileProgress={fileProgress}
-        sendDownloadRequest={sendDownloadRequest}
-        sendStatus={sendStatus}
-        downloadStatus={downloadStatus}
-        remoteEmail={remoteEmail}
-        stopUpload={stopUpload}
-        stopDownload={stopDownload}
-        removeReceivingFile={removeReceivingFile}
-        removeUploadingFile={removeUploadingFile}
-      />}
+        <FileBox
+          className="w-full"
+          files={files}
+          handleSendFileButton={handleSendFileButton}
+          receivingFile={receivingFile}
+          fileProgress={fileProgress}
+          sendDownloadRequest={sendDownloadRequest}
+          sendStatus={sendStatus}
+          downloadStatus={downloadStatus}
+          remoteEmail={remoteEmail}
+          stopUpload={stopUpload}
+          stopDownload={stopDownload}
+          removeReceivingFile={removeReceivingFile}
+          removeUploadingFile={removeUploadingFile}
+        />}
       {link && <div className="relative w-full ">
-          <button className="absolute top-0 right-0 backdrop-blur-lg bg-black/55 px-2 my-2 border-[1px] py-2 hover:bg-gray-300 w-[150px] self-end duration-100 transition-all hover:text-black cursor-pointer rounded-xl  border-white" onClick={downloadFile}>Download File</button>
-        </div>  }
+        <button className="absolute top-0 right-0 backdrop-blur-lg bg-black/55 px-2 my-2 border-[1px] py-2 hover:bg-gray-300 w-[150px] self-end duration-100 transition-all hover:text-black cursor-pointer rounded-xl  border-white" onClick={downloadFile}>Download File</button>
+      </div>}
 
-        {!inCall && (
-            <ChatBox
-              messages={messages}
-              text={text}
-              setText={setText}
-              sendMessage={sendMessage}
-              handleFileChange={handleFileChange}
-              sendFile={sendFile}
-            />
-        )}
+      {!inCall && (
+        <ChatBox
+          messages={messages}
+          text={text}
+          setText={setText}
+          sendMessage={sendMessage}
+          handleFileChange={handleFileChange}
+          sendFile={sendFile}
+        />
+      )}
 
-      </div>
     </div>
-  );
+  </div>
+    ;
 }
 
 export default Room;
