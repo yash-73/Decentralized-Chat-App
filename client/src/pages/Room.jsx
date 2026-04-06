@@ -582,25 +582,24 @@ const downloadFile = useCallback(()=>{
   ]);
 
 
-  return (
-    <div className="bg-gradient-to-br from-[#0B101E] via-black to-[#050A15] w-full h-[100vh] overflow-y-scroll flex flex-col items-center text-white py-4 lg:py-8 px-2 transition-all duration-300">
-      <div className="relative w-full max-w-5xl p-6 flex flex-col bg-white/5 backdrop-blur-xl border border-gray-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl my-auto flex-1">
+    <div className="bg-zinc-950 w-full h-[100vh] overflow-y-scroll flex flex-col items-center text-white py-4 lg:py-8 px-2 transition-colors duration-300">
+      <div className="relative w-full max-w-5xl p-6 flex flex-col bg-zinc-900 border border-zinc-800 my-auto flex-1">
        
-        <div className="w-full flex flex-row justify-between items-center mb-6 pb-4 border-b border-gray-700/50">
+        <div className="w-full flex flex-row justify-between items-center mb-6 pb-4 border-b border-zinc-800">
           {roomData && <div className="flex flex-col">
-            <span className="text-xs text-teal-400 font-bold tracking-wider uppercase mb-1">Room ID</span>
-            <span className="text-2xl font-mono font-bold text-gray-200 tracking-wider bg-black/40 px-3 py-1 rounded-lg border border-gray-700/50">{roomData.roomNum}</span>
+            <span className="text-xs text-zinc-400 font-bold tracking-wider uppercase mb-1">Room ID</span>
+            <span className="text-2xl font-mono font-bold text-teal-400 tracking-wider bg-zinc-950 px-3 py-1 border border-zinc-800">{roomData.roomNum}</span>
           </div>}
           {roomData && <div className="flex flex-col text-right">
-            <span className="text-xs text-blue-400 font-bold tracking-wider uppercase mb-1">Password</span>
-            <span className="text-xl font-mono text-gray-300 bg-black/40 px-3 py-1 rounded-lg border border-gray-700/50">{roomData.roomPass}</span>
+            <span className="text-xs text-zinc-400 font-bold tracking-wider uppercase mb-1">Password</span>
+            <span className="text-xl font-mono text-gray-300 bg-zinc-950 px-3 py-1 border border-zinc-800">{roomData.roomPass}</span>
           </div>}
         </div>
 
         {!incomingCall && !inCall &&
-         <div className="mb-6 flex flex-row justify-between items-center bg-black/20 p-4 rounded-2xl border border-gray-700/50">
-            <div className="flex items-center gap-3">
-              <span className={`w-3 h-3 rounded-full ${remoteSocketId ? 'bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)] animate-pulse'}`}></span>
+         <div className="mb-6 flex flex-row justify-between items-center bg-zinc-950 p-4 border border-zinc-800">
+            <div className="flex items-center gap-4">
+              <span className={`w-3 h-3 ${remoteSocketId ? 'bg-teal-500' : 'bg-yellow-500 animate-pulse'}`}></span>
               <span className="font-medium text-gray-200 text-lg">{remoteSocketId ? `Connected to ${remoteEmail}` : `Waiting for someone to join...`}</span>
             </div>
           <div>
@@ -608,12 +607,12 @@ const downloadFile = useCallback(()=>{
               <button
                 onClick={callUser}
                 disabled={remoteStream}
-                className="bg-white/10 hover:bg-white/20 border border-gray-600 hover:border-teal-400/50 transition-all duration-300 px-4 py-2 rounded-xl text-white shadow-lg flex items-center gap-2 group"
+                className="bg-zinc-800 hover:bg-teal-500 text-gray-200 hover:text-zinc-950 border border-zinc-700 transition-colors duration-300 px-4 py-2 flex items-center gap-2 group font-semibold uppercase tracking-wider text-sm"
               >
-                <FcVideoCall className="text-3xl group-hover:scale-110 transition-transform" /> <span className="font-semibold hidden sm:block">Start Video</span>
+                <FcVideoCall className="text-2xl grayscale group-hover:grayscale-0 transition-all" /> <span className="hidden sm:block">Start Video</span>
               </button>
             ) : <button
-            className="bg-blue-600/80 hover:bg-blue-500 font-semibold transition-all duration-300 px-5 py-2.5 rounded-xl text-white shadow-[0_4px_20px_rgba(59,130,246,0.3)] backdrop-blur-sm border border-blue-500/50 hover:scale-105"
+            className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-bold uppercase tracking-wider transition-colors duration-300 px-6 py-2.5"
             onClick={(e)=>{
               e.preventDefault()
                 const oldSocketId = JSON.parse(localStorage.getItem('userData')).socketId
@@ -629,17 +628,17 @@ const downloadFile = useCallback(()=>{
 
 
         {incomingCall && (
-          <div className="flex flex-row justify-between items-center bg-gray-800/80 backdrop-blur-lg border border-teal-500/50 px-6 py-4 rounded-2xl animate-pulse shadow-[0_0_20px_rgba(20,184,166,0.2)] mb-6">
+          <div className="flex flex-row justify-between items-center bg-zinc-950 border border-teal-500 px-6 py-4 animate-pulse mb-6">
             <p className="font-semibold text-lg">Incoming video call from <span className="text-teal-400">{remoteEmail}</span></p>
 
             <div className="flex gap-4">
             <button
-              className="bg-teal-500 hover:bg-teal-400 px-4 py-2 rounded-xl text-white shadow-lg transition-transform hover:scale-105 flex items-center justify-center"
+              className="bg-teal-500 hover:bg-teal-400 px-6 py-2 text-zinc-950 transition-colors flex items-center justify-center font-bold"
               onClick={handleVideoCall}
             >
               <IoCall className="text-2xl" />
             </button>
-            <button   className="bg-red-500 hover:bg-red-400 px-4 py-2 rounded-xl text-white shadow-lg transition-transform hover:scale-105 flex items-center justify-center"
+            <button   className="bg-red-500 hover:bg-red-400 px-6 py-2 text-zinc-950 transition-colors flex items-center justify-center font-bold"
             onClick={()=>{
               socket.emit('end-call', {to: remoteSocketId});
               endCall();

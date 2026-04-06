@@ -15,7 +15,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
       {/* Message History */}
       <div
         id="message-history"
-        className="flex flex-col w-full max-md:h-[50vh] h-[55vh] overflow-y-scroll scroll-smooth bg-black/20 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-4 mb-4"
+        className="flex flex-col w-full max-md:h-[50vh] h-[55vh] overflow-y-scroll scroll-smooth bg-zinc-950 border border-zinc-800 p-4 mb-4"
       >
         {messages.map((message, index) => (
           <Messages
@@ -30,10 +30,10 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
       {/* Input Section */}
       <form
         id="message-box"
-        className="w-full flex flex-col justify-between bg-black/30 backdrop-blur-md rounded-2xl border border-gray-700/50 p-2"
+        className="w-full flex flex-col justify-between bg-zinc-950 border border-zinc-800 p-2"
         onSubmit={sendMessage}
       >
-          <div className="flex flex-row items-center bg-black/20 rounded-xl border border-gray-700/50 pr-2 overflow-hidden focus-within:border-teal-500/50 focus-within:ring-1 focus-within:ring-teal-500/20 transition-all">
+          <div className="flex flex-row items-center bg-zinc-900 border border-zinc-700 pr-2 overflow-hidden focus-within:border-teal-400 transition-colors">
           <textarea
             id="type-message"
             placeholder="Type a message..."
@@ -52,7 +52,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
           ></textarea>
 
           <div className="flex items-center gap-2">
-            <div className="text-center items-center flex flex-col justify-center rounded-full hover:bg-gray-700/50 transition-all delay-75 p-2">
+            <div className="text-center items-center flex flex-col justify-center hover:bg-zinc-800 transition-colors p-2 cursor-pointer">
               <input
                 className="hidden"
                 id="file"
@@ -60,7 +60,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
                 onChange={handleFileChange}
               />
               <label htmlFor="file" title="Attach file">
-                <MdOutlineAttachFile className="text-gray-400 hover:text-white cursor-pointer text-2xl transition-colors" />
+                <MdOutlineAttachFile className="text-gray-400 hover:text-teal-400 cursor-pointer text-2xl transition-colors" />
               </label>
             </div>
 
@@ -68,7 +68,7 @@ function ChatBox({ messages, text, setText, sendMessage, handleFileChange }) {
               id="send-message"
               type="submit"
               disabled={text.trim().length === 0}
-              className="bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 shadow-[0_0_15px_rgba(20,184,166,0.3)] hover:shadow-[0_0_20px_rgba(20,184,166,0.5)]"
+              className="bg-teal-500 hover:bg-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 font-bold py-3 px-8 transition-colors uppercase tracking-wider"
             >
               Send
             </button>

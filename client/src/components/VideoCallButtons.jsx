@@ -49,7 +49,7 @@ function VideoCallButtons({
     return (
         <div className={`flex flex-row justify-center gap-4 sm:gap-8 items-center ${className} py-4 my-2`}>
             <button
-                className={`rounded-full p-4 flex items-center justify-center transition-all duration-300 shadow-lg border ${isAudioEnabled ? 'bg-gray-800/80 hover:bg-gray-700 border-gray-700/50 text-white' : 'bg-red-500/90 hover:bg-red-500 border-red-500/50 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]'}`}
+                className={`p-4 flex items-center justify-center transition-colors border ${isAudioEnabled ? 'bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white' : 'bg-red-500 hover:bg-red-400 border-red-500 text-zinc-950'}`}
                 onClick={toggleAudio}
                 title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
             >
@@ -62,14 +62,14 @@ function VideoCallButtons({
             
             <button
                 onClick={handleEndCall}
-                className="rounded-full p-4 drop-shadow-2xl flex items-center justify-center bg-red-600/90 hover:bg-red-500 text-white transition-all duration-300 shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:scale-110 active:scale-95 border border-red-500/50 z-10"
+                className="p-4 flex items-center justify-center bg-red-600 hover:bg-red-500 text-white transition-colors border border-red-500 z-10"
                 title="End Call"
             >
                 <MdCallEnd className="text-4xl" />
             </button>
 
             <button
-                className={`rounded-full p-4 flex items-center justify-center transition-all duration-300 shadow-lg border ${isVideoEnabled ? 'bg-gray-800/80 hover:bg-gray-700 border-gray-700/50 text-white' : 'bg-red-500/90 hover:bg-red-500 border-red-500/50 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]'}`}
+                className={`p-4 flex items-center justify-center transition-colors border ${isVideoEnabled ? 'bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white' : 'bg-red-500 hover:bg-red-400 border-red-500 text-zinc-950'}`}
                 onClick={toggleVideo}
                 title={isVideoEnabled ? "Disable Camera" : "Enable Camera"}
             >

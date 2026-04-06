@@ -29,18 +29,18 @@ function CreateRoom({className, handleRoomCreate}) {
     return (
        
                 <form 
-                className={`flex flex-col bg-white/5 backdrop-blur-xl items-center py-6 px-8 ${className} z-10 rounded-3xl border border-gray-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]`}
+                className={`flex flex-col bg-zinc-900 items-start py-8 px-8 w-[350px] max-w-full ${className} z-10 border border-zinc-800`}
                 action="submit" 
                 onSubmit={handleSubmit}
                 >
 
-                    <div className='mb-6 text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500'>Create Room</div>
+                    <div className='mb-8 text-xl font-bold text-teal-400 uppercase tracking-widest'>Create Room</div>
 
 
-                    <div className='flex flex-col mb-4  w-full'>
-                    <label className='text-sm font-medium text-gray-300 mb-1 ml-1' htmlFor="username">Username</label>
+                    <div className='flex flex-col mb-6  w-full'>
+                    <label className='text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide' htmlFor="username">Username</label>
                     <input type="text"
-                    className='bg-black/20 focus:bg-black/40 border border-gray-700 focus:border-teal-500 text-white px-3 py-2 rounded-xl outline-none transition-all focus:ring-2 focus:ring-teal-500/20' 
+                    className='bg-zinc-950 focus:bg-black border border-zinc-700 focus:border-teal-400 text-white px-3 py-3 outline-none transition-colors' 
                         required
                       id='username'
                       autoComplete="off"
@@ -48,20 +48,20 @@ function CreateRoom({className, handleRoomCreate}) {
                       value={username}
                       onChange={(e)=>{setUsername(e.target.value)}}/>
                     </div>
-                    <div className='flex flex-col mb-4 w-full'>
-                    <label className='text-sm font-medium text-gray-300 mb-1 ml-1' htmlFor="roomNumber">Room Number</label>
+                    <div className='flex flex-col mb-6 w-full'>
+                    <label className='text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide' htmlFor="roomNumber">Room Number</label>
                     <div
-                    className='bg-black/20 border border-gray-700 text-white px-3 py-2 rounded-xl flex flex-row justify-between items-center transition-all'  
+                    className='bg-zinc-950 border border-zinc-700 text-white px-3 py-3 flex flex-row justify-between items-center transition-colors'  
                       id='roomNumber'
                       > <span className="font-mono tracking-wider">{roomNum}</span>   <MdOutlineAutorenew  
                       onClick={(e)=>{e.preventDefault(); setRoomNum(Math.floor(100000 + Math.random() * 900000).toString())}}
-                      className='cursor-pointer text-xl text-teal-400 hover:text-teal-300 hover:rotate-180 transition-all duration-300'/></div>
+                      className='cursor-pointer text-xl text-teal-400 hover:text-teal-300 transition-colors duration-300'/></div>
                     </div>
 
-                    <div className='flex flex-col mb-6 w-full'>
-                    <label className='text-sm font-medium text-gray-300 mb-1 ml-1' htmlFor="roomPassword">Room Password</label>
+                    <div className='flex flex-col mb-8 w-full'>
+                    <label className='text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide' htmlFor="roomPassword">Room Password</label>
                     <input type="password"
-                    className='bg-black/20 focus:bg-black/40 border border-gray-700 focus:border-teal-500 text-white px-3 py-2 rounded-xl outline-none transition-all focus:ring-2 focus:ring-teal-500/20' 
+                    className='bg-zinc-950 focus:bg-black border border-zinc-700 focus:border-teal-400 text-white px-3 py-3 outline-none transition-colors' 
                       id='roomPassword'
                     autoComplete="off"
                         required
@@ -70,7 +70,7 @@ function CreateRoom({className, handleRoomCreate}) {
                       onChange={(e)=>{setRoomPassword(e.target.value)}}/>
                     </div>
 
-                    <button  className='mt-2 py-2.5 w-full bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 shadow-[0_0_20px_rgba(20,184,166,0.3)] text-white font-bold rounded-xl transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98]'>
+                    <button  className='mt-2 py-3 w-full bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 text-black font-bold uppercase tracking-wider transition-colors'>
                         Create Room
                     </button>
 

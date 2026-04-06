@@ -31,39 +31,39 @@ function JoinRoom({className, handleJoinRoom}) {
     return (
        
                 <form 
-                className={`flex flex-col bg-white/5 backdrop-blur-xl items-center py-6 px-8 ${className} z-10 rounded-3xl border border-gray-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]`}
+                className={`flex flex-col bg-zinc-900 items-start py-8 px-8 w-[350px] max-w-full ${className} z-10 border border-zinc-800`}
                 action="submit" 
                 onSubmit={handleSubmit}
                 >
 
-                    <div className='mb-6 text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500'>Join Room</div>
+                    <div className='mb-8 text-xl font-bold text-teal-400 uppercase tracking-widest'>Join Room</div>
 
 
-                    <div className='flex flex-col mb-4 w-full'>
-                    <label className='text-sm font-medium text-gray-300 mb-1 ml-1' htmlFor="joinUsername">Username</label>
+                    <div className='flex flex-col mb-6 w-full'>
+                    <label className='text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide' htmlFor="joinUsername">Username</label>
                     <input type="text"
-                    className='bg-black/20 focus:bg-black/40 border border-gray-700 focus:border-teal-500 text-white px-3 py-2 rounded-xl outline-none transition-all focus:ring-2 focus:ring-teal-500/20' 
+                    className='bg-zinc-950 focus:bg-black border border-zinc-700 focus:border-teal-400 text-white px-3 py-3 outline-none transition-colors' 
                       id='joinUsername'
                       autoComplete="off"
                       placeholder="Enter username"
                       value={username}
                       onChange={(e)=>{setUsername(e.target.value)}}/>
                     </div>
-                    <div className='flex flex-col mb-4 w-full'>
-                    <label className='text-sm font-medium text-gray-300 mb-1 ml-1' htmlFor="joinRoomNumber">Room Number</label>
+                    <div className='flex flex-col mb-6 w-full'>
+                    <label className='text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide' htmlFor="joinRoomNumber">Room Number</label>
                     <input type="text"
-                    className='bg-black/20 focus:bg-black/40 border border-gray-700 focus:border-teal-500 text-white px-3 py-2 rounded-xl outline-none transition-all focus:ring-2 focus:ring-teal-500/20 font-mono tracking-wider' 
+                    className='bg-zinc-950 focus:bg-black border border-zinc-700 focus:border-teal-400 text-white px-3 py-3 outline-none transition-colors font-mono tracking-wider' 
                       id='joinRoomNumber'
                       autoComplete="off"
-                      placeholder="6-digit room code"
+                      placeholder="6-digit code"
                       value={roomNum}
                       onChange={(e)=>{setRoomNum(e.target.value)}}/>
                     </div>
 
-                    <div className='flex flex-col mb-6 w-full'>
-                    <label className='text-sm font-medium text-gray-300 mb-1 ml-1' htmlFor="joinRoomPassword">Room Password</label>
+                    <div className='flex flex-col mb-8 w-full'>
+                    <label className='text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide' htmlFor="joinRoomPassword">Room Password</label>
                     <input type="password"
-                    className='bg-black/20 focus:bg-black/40 border border-gray-700 focus:border-teal-500 text-white px-3 py-2 rounded-xl outline-none transition-all focus:ring-2 focus:ring-teal-500/20' 
+                    className='bg-zinc-950 focus:bg-black border border-zinc-700 focus:border-teal-400 text-white px-3 py-3 outline-none transition-colors' 
                       id='joinRoomPassword'
                     autoComplete="off"
                       placeholder="Enter password"
@@ -71,7 +71,7 @@ function JoinRoom({className, handleJoinRoom}) {
                       onChange={(e)=>{setRoomPassword(e.target.value)}}/>
                     </div>
 
-                    <button className='mt-2 py-2.5 w-full bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 shadow-[0_0_20px_rgba(20,184,166,0.3)] text-white font-bold rounded-xl transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98]'>
+                    <button className='mt-2 py-3 w-full bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 text-black font-bold uppercase tracking-wider transition-colors'>
                         Join
                     </button>
 
