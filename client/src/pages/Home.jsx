@@ -147,9 +147,9 @@ function Home() {
   }, [socket, handleJoiningRoom, handleJoinRoom]);
 
   return (
-    <div className="flex flex-row bg-black overflow-x-hidden overflow-y-scroll h-[100vh]">
+    <div className="flex flex-row bg-gradient-to-br from-[#0B101E] via-black to-[#050A15] overflow-x-hidden overflow-y-scroll h-[100vh]">
       <nav
-                    className={` max-md:hidden sticky top-0 flex flex-col bg-black  text-white justify-start items-start px-8 `}>
+                    className={` max-md:hidden sticky top-0 flex flex-col bg-black/40 backdrop-blur-xl border-r border-gray-800/80 shadow-2xl text-white justify-start items-start px-8 `}>
                     <div
                         onClick={() => {location.reload();}}
                         className="hover:cursor-pointer text-teal-400 font-sans  my-8 px-4 font-bold text-2xl">
@@ -196,12 +196,12 @@ function Home() {
                     }
         </aside>
 
-        <main className="w-full  md:border-l-[1px] border-gray-400 ">
+        <main className="w-full relative z-10 ">
           <div className="w-full  md:h-[100vh] relative justify-center    flex flex-col items-center text-white">
             <div className="flex flex-row p-8 md:text-[30px] text-2xl font-bold text-center  z-20">
           <p className="">Welcome to 
-          </p><p className="text-teal-400 z-20 mx-2 name-shadow">whisperNet</p></div>
-          <h2 className="p-8 md:text-[40px] text-3xl text-white font-bold z-20 text-center">A completely private and secure chat application </h2>
+          </p><p className="text-teal-400 z-20 mx-2 name-shadow drop-shadow-[0_0_10px_rgba(45,212,191,0.5)]">whisperNet</p></div>
+          <h2 className="p-8 md:text-[40px] text-l text-gray-300 font-bold z-20 text-center tracking-tight leading-tight">A completely <span className="text-white">private</span> and <span className="text-white">secure</span> chat application </h2>
           <div
                             id="webrtc_logo_animation "
                             className="absolute top-0 right-0 flex flex-col z-[1] opacity-70">
@@ -315,31 +315,31 @@ function Home() {
                                 </g>
                             </svg>
           </div>
-          <div ref={aniref} className="z-20 flex flex-row max-md:flex-col items-center justify-evenly w-full py-8 font-bold"> 
-                <div className="  text-center max-md:w-full">
+            <div ref={aniref} className="z-20 flex flex-row max-md:flex-col items-center justify-evenly w-full py-8 font-bold gap-8"> 
+                <div className="  text-center max-md:w-full group">
                   <div className="flex flex-col items-center justify-start w-full ">
-                    <div className="p-[30px] bg-black border-gray-400 border-4 rounded-full w-fit ">
-                        <BsFillChatTextFill className="text-[80px] text-blue-500" />
+                    <div className="p-8 bg-white/5 backdrop-blur-md border border-gray-700/50 group-hover:border-blue-500/50 group-hover:bg-white/10 group-hover:-translate-y-2 group-hover:shadow-[0_10px_30px_-10px_rgba(59,130,246,0.5)] transition-all duration-300 rounded-3xl w-fit ">
+                        <BsFillChatTextFill className="text-[70px] text-blue-400" />
                     </div>
-                    <p className="m-2 text-xl">Chat with friends</p>
+                    <p className="mt-6 text-xl text-gray-300 font-medium tracking-wide">Chat with friends</p>
                     </div>
                 </div>
 
-                <div className=" text-center max-md:w-full">
+                <div className=" text-center max-md:w-full group">
                 <div className="flex flex-col items-center justify-start w-full ">
-                    <div className="p-[30px] bg-black border-gray-400 border-4 rounded-full w-fit">
-                        <FcVideoCall className="text-[80px]" />
+                    <div className="p-8 bg-white/5 backdrop-blur-md border border-gray-700/50 group-hover:border-teal-500/50 group-hover:bg-white/10 group-hover:-translate-y-2 group-hover:shadow-[0_10px_30px_-10px_rgba(20,184,166,0.5)] transition-all duration-300 rounded-3xl w-fit">
+                        <FcVideoCall className="text-[70px]" />
                     </div>
-                    <p className="m-2 text-xl">Video Call</p>
+                    <p className="mt-6 text-xl text-gray-300 font-medium tracking-wide">Video Call</p>
                 </div>
                 </div>
 
-                <div className=" text-center max-md:w-full">
+                <div className=" text-center max-md:w-full group">
                 <div className="flex flex-col items-center justify-start w-full ">
-                    <div className="p-[30px]   bg-black  border-gray-400 border-4 rounded-full w-fit">
-                        <RiFolderSharedFill className="  text-[80px] text-yellow-500" />
+                    <div className="p-8 bg-white/5 backdrop-blur-md border border-gray-700/50 group-hover:border-yellow-500/50 group-hover:bg-white/10 group-hover:-translate-y-2 group-hover:shadow-[0_10px_30px_-10px_rgba(234,179,8,0.5)] transition-all duration-300 rounded-3xl w-fit">
+                        <RiFolderSharedFill className="text-[70px] text-yellow-500" />
                     </div>
-                    <p className="m-2 text-xl">Share files</p>
+                    <p className="mt-6 text-xl text-gray-300 font-medium tracking-wide">Share files</p>
                 </div>
                 </div>
             </div>
@@ -397,15 +397,33 @@ function Home() {
                     </div>
 
                     <div className="w-full flex flex-col items-center my-[150px] ">
-                        <h3 className="text-teal-400 text-[30px] font-bold border-teal-400 border-b-2">Features</h3>
+                        <h3 className="text-teal-400 text-[30px] font-bold border-b border-teal-500/30 pb-2 mb-10 tracking-widest uppercase text-sm">Features</h3>
 
-                        <div ref={features_parent} className=" w-[80%] max-md:w-full flex-flex-col">
-                        <p className="feat_main py-2 my-6 bg-[#bf0000db] rounded-md  ">Decentralized one-to-one chat</p>
-                        <p className="feat_main py-2 my-6 bg-[#0089ccdb] rounded-md ">Secure communication using WebRTC</p>
-                        <p className="feat_main py-2 my-6 bg-[#ffcc00db] rounded-md  ">Peer-to-peer file sharing (images, videos, and documents)</p>
-                        <p className="feat_main py-2 my-6 bg-[#ffffffdb] text-black rounded-md  ">Lightweight and fast performance</p>
-                        <p className="feat_main py-2 my-6 bg-[#009939db] rounded-md  ">Privacy-focused (no central server to store messages or files)</p>
-                        <p className="feat_main py-2 my-6 bg-[#ff6600db] rounded-md  ">Simple and intuitive user interface</p>
+                        <div ref={features_parent} className=" w-[80%] max-md:w-full flex-col gap-4">
+                        <div className="feat_main px-6 py-5 my-4 bg-white/5 backdrop-blur-sm border border-gray-700/50 hover:bg-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] rounded-2xl flex items-center gap-6 transition-all duration-300">
+                            <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8)]"></div>
+                            <p className="text-gray-200 font-medium text-lg">Decentralized one-to-one chat</p>
+                        </div>
+                        <div className="feat_main px-6 py-5 my-4 bg-white/5 backdrop-blur-sm border border-gray-700/50 hover:bg-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] rounded-2xl flex items-center gap-6 transition-all duration-300">
+                            <div className="w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.8)]"></div>
+                            <p className="text-gray-200 font-medium text-lg">Secure communication using WebRTC</p>
+                        </div>
+                        <div className="feat_main px-6 py-5 my-4 bg-white/5 backdrop-blur-sm border border-gray-700/50 hover:bg-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] rounded-2xl flex items-center gap-6 transition-all duration-300">
+                            <div className="w-3 h-3 rounded-full bg-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.8)]"></div>
+                            <p className="text-gray-200 font-medium text-lg">Peer-to-peer file sharing (images, videos, and documents)</p>
+                        </div>
+                        <div className="feat_main px-6 py-5 my-4 bg-white/5 backdrop-blur-sm border border-gray-700/50 hover:bg-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] rounded-2xl flex items-center gap-6 transition-all duration-300">
+                            <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)]"></div>
+                            <p className="text-gray-200 font-medium text-lg">Lightweight and fast performance</p>
+                        </div>
+                        <div className="feat_main px-6 py-5 my-4 bg-white/5 backdrop-blur-sm border border-gray-700/50 hover:bg-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] rounded-2xl flex items-center gap-6 transition-all duration-300">
+                            <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.8)]"></div>
+                            <p className="text-gray-200 font-medium text-lg">Privacy-focused (no central server to store messages or files)</p>
+                        </div>
+                        <div className="feat_main px-6 py-5 my-4 bg-white/5 backdrop-blur-sm border border-gray-700/50 hover:bg-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] rounded-2xl flex items-center gap-6 transition-all duration-300">
+                            <div className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]"></div>
+                            <p className="text-gray-200 font-medium text-lg">Simple and intuitive user interface</p>
+                        </div>
                         </div>
                     </div>
                 </div>

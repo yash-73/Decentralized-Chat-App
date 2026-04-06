@@ -29,49 +29,48 @@ function CreateRoom({className, handleRoomCreate}) {
     return (
        
                 <form 
-                className={`flex flex-col backdrop-blur-lg  items-center py-2 px-4 ${className} z-10 rounded-2xl border-[1px] border-gray-500 shadow-lg`}
+                className={`flex flex-col bg-white/5 backdrop-blur-xl items-center py-6 px-8 ${className} z-10 rounded-3xl border border-gray-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]`}
                 action="submit" 
                 onSubmit={handleSubmit}
                 >
 
-                    <div className='my-4 text-[18px] font-bold  text-gray-300'>Create Room</div>
+                    <div className='mb-6 text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500'>Create Room</div>
 
 
-                    <div className='flex flex-col my-2 text-gray-300 w-full'>
-                    <label className='text-[14px] font-semibold' htmlFor="username">Username</label>
+                    <div className='flex flex-col mb-4  w-full'>
+                    <label className='text-sm font-medium text-gray-300 mb-1 ml-1' htmlFor="username">Username</label>
                     <input type="text"
-                    className='bg-transparent border-[1px] focus:border-white text-gray-300  pl-2 py-1 border-gray-800 outline-none' 
+                    className='bg-black/20 focus:bg-black/40 border border-gray-700 focus:border-teal-500 text-white px-3 py-2 rounded-xl outline-none transition-all focus:ring-2 focus:ring-teal-500/20' 
                         required
                       id='username'
                       autoComplete="off"
+                      placeholder="Enter username"
                       value={username}
                       onChange={(e)=>{setUsername(e.target.value)}}/>
                     </div>
-                    <div className='flex flex-col my-2 w-full text-gray-300'>
-                    <label className='text-[14px] font-semibold' htmlFor="roomNumber">Room Number</label>
+                    <div className='flex flex-col mb-4 w-full'>
+                    <label className='text-sm font-medium text-gray-300 mb-1 ml-1' htmlFor="roomNumber">Room Number</label>
                     <div
-                    className='bg-transparent flex flex-row justify-between relative border-[1px] focus:border-white text-gray-300  pl-2 py-1 border-gray-800 outline-none cursor-text'  
+                    className='bg-black/20 border border-gray-700 text-white px-3 py-2 rounded-xl flex flex-row justify-between items-center transition-all'  
                       id='roomNumber'
-
-                      
-                      > {roomNum}   <MdOutlineAutorenew  
+                      > <span className="font-mono tracking-wider">{roomNum}</span>   <MdOutlineAutorenew  
                       onClick={(e)=>{e.preventDefault(); setRoomNum(Math.floor(100000 + Math.random() * 900000).toString())}}
-                      className='cursor-pointer text-[25px] '/></div>
+                      className='cursor-pointer text-xl text-teal-400 hover:text-teal-300 hover:rotate-180 transition-all duration-300'/></div>
                     </div>
 
-                    <div className='flex flex-col my-2 text-gray-300 w-full'>
-                    <label className='text-14px font-semibold' htmlFor="roomPassword">Room Password</label>
+                    <div className='flex flex-col mb-6 w-full'>
+                    <label className='text-sm font-medium text-gray-300 mb-1 ml-1' htmlFor="roomPassword">Room Password</label>
                     <input type="password"
-                    className='bg-transparent border-[1px] focus:border-white   pl-2 py-1 border-gray-600 outline-none' 
+                    className='bg-black/20 focus:bg-black/40 border border-gray-700 focus:border-teal-500 text-white px-3 py-2 rounded-xl outline-none transition-all focus:ring-2 focus:ring-teal-500/20' 
                       id='roomPassword'
                     autoComplete="off"
                         required
-                        
+                        placeholder="At least 6 characters"
                       value={roomPassword}
                       onChange={(e)=>{setRoomPassword(e.target.value)}}/>
                     </div>
 
-                    <button  className='my-4 py-1 w-full hover:bg-gray-300 shadow-md text-white hover:text-black font-semibold bg-gray-800  transition-all delay-100 px-4  border-gray-800 rounded-lg'>
+                    <button  className='mt-2 py-2.5 w-full bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 shadow-[0_0_20px_rgba(20,184,166,0.3)] text-white font-bold rounded-xl transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98]'>
                         Create Room
                     </button>
 
