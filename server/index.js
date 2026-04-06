@@ -159,8 +159,9 @@ io.on('connection', (socket) => {
       let userIndex = room.members.findIndex(member=> member.socketId == oldSocketId)
 
       if(userIndex != -1){
-        room.members[userIndex] = socket.id;
-        await room.save()
+        room.members[userIndex].socketId = socket.id;
+        room.markModified('members');
+        await room.save();
         io.to(roomNum).emit('user-joined', { email: from, socketId: socket.id });
         console.log(socket.id, " : ", from);
         socket.join(roomNum)
@@ -169,7 +170,7 @@ io.on('connection', (socket) => {
       else{
 
         if(room.members.length < 2){
-          room.members.push({ username, socketId: socket.id });
+          room.members.push({ username: from, socketId: socket.id });
           await room.save();
           io.to(roomNum).emit('user-joined', { email: from, socketId: socket.id });
           socket.join(roomNum);

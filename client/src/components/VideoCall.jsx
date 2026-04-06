@@ -15,7 +15,6 @@ function VideoCall({
               if (ref) ref.srcObject = remoteStream;
             }}
             autoPlay
-            muted
             className={`w-full max-h-[650px] object-contain`}
           />
 
@@ -27,7 +26,7 @@ function VideoCall({
                   
                 }}
                 autoPlay
-               
+                muted
                 className="w-full h-full object-cover transform scale-x-[-1]"
               />
             </div>
@@ -46,7 +45,7 @@ function VideoCall({
                   if (ref) ref.srcObject = myStream;
                 }}
                 autoPlay
-                
+                muted
                 className="w-full h-full object-cover transform scale-x-[-1]"
               />
             </div>

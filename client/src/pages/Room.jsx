@@ -71,66 +71,63 @@ function Room() {
     try {
       const totalChunks = Math.ceil(files.size / CHUNK_SIZE);
       let chunkIndex = 0;
-      const reader = new FileReader();
-      const readAndSendChunk = () => {
+      let lastReportedProgress = 0;
+
+      const proceedToNextChunk = async () => {
+        if (cancelDownload) {
+          setSendStatus("Send");
+          setFileProgress(0);
+          return;
+        }
+
+        if (chunkIndex >= totalChunks) {
+          setSendStatus("Send");
+          setFiles(null);
+          setFileProgress(0);
+          fileChannel.current.send(JSON.stringify({ type: "file-end" }));
+          return;
+        }
+
         const start = chunkIndex * CHUNK_SIZE;
         const end = Math.min(start + CHUNK_SIZE, files.size);
-        const chunk = files.slice(start, end);
+        const chunkBlob = files.slice(start, end);
 
-        reader.onload = () => {
+        // Retrieve native buffer
+        const arrayBuffer = await chunkBlob.arrayBuffer();
 
-          if (cancelDownload) {
-            setSendStatus("Send");
-            setFileProgress(0)
-            return;
-          }
+        // Throttled UI progress reporting
+        const currentProgress = Math.floor(((chunkIndex + 1) / totalChunks) * 100);
+        if (currentProgress > lastReportedProgress) {
+          setFileProgress(currentProgress);
+          lastReportedProgress = currentProgress;
+        }
 
-          const arrayBuffer = reader.result;
-          const chunkArray = encode(arrayBuffer);
-
-          const chunkData = JSON.stringify({
-            type: "file-chunk",
-            chunk: chunkArray,
-            chunkIndex: chunkIndex,
-            totalChunks: totalChunks,
-          });
-
-          if (
-            fileChannel.current.bufferedAmount >
-            fileChannel.current.bufferedAmountLowThreshold
-          ) {
-            fileChannel.current.onbufferedamountlow = () => {
-
-              fileChannel.current.send(chunkData);
-              setFileProgress((chunkIndex + 1 / totalChunks) * 100)
-              fileChannel.current.onbufferedamountlow = null;
-              proceedToNextChunk();
-            };
+        const sendChunk = () => {
+          fileChannel.current.send(arrayBuffer); // Blast RAW binary over WebRTC
+          chunkIndex++;
+          if (chunkIndex % 40 === 0) {
+            setTimeout(proceedToNextChunk, 0);
           } else {
-
-            fileChannel.current.send(chunkData);
             proceedToNextChunk();
           }
         };
 
-        reader.readAsArrayBuffer(chunk);
-      };
-
-      const proceedToNextChunk = () => {
-        chunkIndex++;
-        if (chunkIndex < totalChunks) {
-          readAndSendChunk();
+        if (
+          fileChannel.current.bufferedAmount >
+          fileChannel.current.bufferedAmountLowThreshold
+        ) {
+          fileChannel.current.onbufferedamountlow = () => {
+            fileChannel.current.onbufferedamountlow = null;
+            sendChunk();
+          };
         } else {
-          setSendStatus("Send")
-          setFiles(null);
-          setFileProgress(0);
-          fileChannel.current.send(JSON.stringify({ type: "file-end" }));
+          sendChunk();
         }
       };
-      readAndSendChunk();
+
+      proceedToNextChunk();
     } catch (error) {
       console.error("Error sending file:", error);
-
     }
   }, [files, CHUNK_SIZE, cancelDownload]);
 
@@ -170,10 +167,41 @@ function Room() {
 
   const handleIncomingFile = useCallback(
     async (event) => {
+      // 1) RAW BINARY INTERCEPTION
+      if (typeof event.data !== "string") {
+        let chunkArray;
+        if (event.data instanceof ArrayBuffer) {
+          chunkArray = new Uint8Array(event.data);
+        } else if (event.data instanceof Blob) {
+          const buf = await event.data.arrayBuffer();
+          chunkArray = new Uint8Array(buf);
+        } else {
+          chunkArray = new Uint8Array(event.data);
+        }
+
+        setReceivingFile((prev) => {
+          if (!prev) return prev;
+          
+          // CRITICAL MEMORY FIX: Mutate array in-place instead of O(N^2) cloning 60,000 arrays
+          prev.chunks[prev.receivedChunks] = chunkArray;
+          const newReceivedChunks = prev.receivedChunks + 1;
+          const isComplete = newReceivedChunks === prev.totalChunks;
+          
+          setFileProgress(Math.floor((newReceivedChunks / prev.totalChunks) * 100));
+
+          return {
+            ...prev,
+            receivedChunks: newReceivedChunks,
+            isComplete
+          };
+        });
+        return; // Finished with raw binary chunk
+      }
+
+      // 2) JSON CONTROL MESSAGES
       const fileData = JSON.parse(event.data);
 
       if (fileData.type === "file-start") {
-
         setReceivingFile({
           name: fileData.fileName,
           size: fileData.fileSize,
@@ -184,38 +212,15 @@ function Room() {
           isComplete: false
         });
       }
-      else if (fileData.type == "start-download") {
+      else if (fileData.type === "start-download") {
         setSendStatus("Sending...");
         await sendFile();
-      }
-      else if (fileData.type === "file-chunk") {
-        setReceivingFile((prev) => {
-          if (!prev) return prev;
-
-          const chunkArray = new Uint8Array(decode(fileData.chunk));
-          const newChunks = [...prev.chunks];
-          newChunks[fileData.chunkIndex] = chunkArray;
-
-          const newReceivedChunks = prev.receivedChunks + 1;
-          const isComplete = newReceivedChunks === prev.totalChunks;
-          setFileProgress((newReceivedChunks / prev.totalChunks) * 100);
-
-          return {
-            ...prev,
-            chunks: newChunks,
-            receivedChunks: newReceivedChunks,
-            isComplete
-          };
-        });
       }
       else if (fileData.type === "file-end") {
         setReceivingFile((prev) => {
           if (!prev) return prev;
-          if (prev.isComplete) {
-            assembleAndDownloadFile(prev);
-            return null;
-          }
-          return prev;
+          assembleAndDownloadFile(prev);
+          return null;
         });
       }
     },
@@ -333,29 +338,41 @@ function Room() {
     const screenWidth = document.documentElement.clientWidth;
 
     const videoConstraintsPC = {
-      width: { ideal: 1280, min: 640, max: 1920 },
-      height: { ideal: 720, min: 480, max: 1080 },
-      frameRate: { ideal: 30, max: 60 }
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+      facingMode: "user"
     }
 
     const videoContraintsMobile = {
-      width: { ideal: 720, min: 480, max: 1080 },
-      height: { ideal: 1280, min: 640, max: 1920 },
-      frameRate: { ideal: 30, max: 60 }
+      width: { ideal: 720 },
+      height: { ideal: 1280 },
+      facingMode: "user"
     }
 
     let constraints = videoConstraintsPC;
     if (screenWidth < 600) {
       constraints = videoContraintsMobile;
     }
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: constraints,
-    });
-    setMyStream(stream);
-    stream.getTracks().forEach((track) => {
-      peer.peer.addTrack(track, stream);
-    });
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: constraints,
+      });
+      setMyStream(stream);
+      stream.getTracks().forEach((track) => {
+        peer.peer.addTrack(track, stream);
+      });
+    } catch (err) {
+      console.error("Error accessing media devices.", err);
+      // Let the user know specifically about common mobile issues:
+      if (err.name === 'NotAllowedError') {
+        alert("Camera/Microphone access was denied. Please allow permissions.");
+      } else if (err.name === 'NotFoundError') {
+        alert("No camera/microphone found on this device.");
+      } else {
+        alert("Failed to access camera. NOTE for mobile phones: Modern browsers block the camera if the URL is not HTTPS. Error details: " + err.message);
+      }
+    }
   }, []);
 
   const callUser = useCallback(async () => {
@@ -581,9 +598,9 @@ function Room() {
     dispatch
   ]);
 
-
-  <div className="bg-zinc-950 w-full h-[100vh] overflow-y-scroll flex flex-col items-center text-white py-4 lg:py-8 px-2 transition-colors duration-300">
-    <div className="relative w-full max-w-5xl p-6 flex flex-col bg-zinc-900 border border-zinc-800 my-auto flex-1">
+  return (
+    <div className="bg-zinc-950 w-full h-[100vh] overflow-y-scroll flex flex-col items-center text-white py-4 lg:py-8 px-2 transition-colors duration-300">
+      <div className="relative w-full max-w-5xl p-6 flex flex-col bg-zinc-900 border border-zinc-800 my-auto flex-1">
 
       <div className="w-full flex flex-row justify-between items-center mb-6 pb-4 border-b border-zinc-800">
         {roomData && <div className="flex flex-col">
@@ -699,7 +716,7 @@ function Room() {
 
     </div>
   </div>
-    ;
+  );
 }
 
 export default Room;
